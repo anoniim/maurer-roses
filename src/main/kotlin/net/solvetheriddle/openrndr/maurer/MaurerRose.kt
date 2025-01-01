@@ -2,17 +2,18 @@
 package net.solvetheriddle.openrndr.maurer
 
 import net.solvetheriddle.openrndr.Display
+import net.solvetheriddle.openrndr.maurer.bank.SeedBank
 import net.solvetheriddle.openrndr.sketchSize
 import org.openrndr.*
 import org.openrndr.animatable.Animatable
 import org.openrndr.animatable.easing.Easing
 import org.openrndr.color.ColorRGBa
-import org.openrndr.draw.*
+import org.openrndr.draw.ShadeStyle
+import org.openrndr.draw.colorBuffer
+import org.openrndr.draw.isolated
+import org.openrndr.draw.loadImage
 import org.openrndr.extensions.Screenshots
-import org.openrndr.extra.color.presets.*
 import org.openrndr.extra.fx.color.LumaOpacity
-import org.openrndr.extra.shadestyles.NPointRadialGradient
-import org.openrndr.extra.shadestyles.linearGradient
 import org.openrndr.ffmpeg.ScreenRecorder
 import org.openrndr.math.Vector2
 import org.openrndr.math.asRadians
@@ -21,7 +22,6 @@ import org.openrndr.panel.elements.*
 import org.openrndr.panel.layout
 import org.openrndr.shape.ShapeContour
 import org.openrndr.shape.contour
-import java.io.File
 import kotlin.math.*
 import kotlin.properties.Delegates
 
@@ -157,6 +157,11 @@ class BackgroundImage(imagePath: String) {
     val filtered = colorBuffer(image.width, image.height)
 }
 
+private val rose = MaurerRose()
+private val bank = SeedBank(seedBankName) { nValue, dValue -> rose.set(nValue, dValue) }
+private val initialN = bank.seeds[bank.selectedSeed].nValue
+private val initialD = bank.seeds[bank.selectedSeed].dValue // For AnimationConfig.AX = 3.1
+
 private class MaurerRose : Animatable() {
 
     // number of petals
@@ -290,16 +295,16 @@ private var revealChangeFrame = 0
 
 private fun Program.enableRoseAnimations() {
     executeOnKey("left-shift") {
-        val targetSeedIndex = max(selectedSeed - 1, 0)
+        val targetSeedIndex = max(bank.selectedSeed - 1, 0)
         animateToTarget(targetSeedIndex)
     }
     executeOnKey("right-shift") {
-        val targetSeedIndex = min(selectedSeed + 1, seeds.lastIndex)
+        val targetSeedIndex = min(bank.selectedSeed + 1, bank.seeds.lastIndex)
         animateToTarget(targetSeedIndex)
     }
     if (!enableScreenshots) executeOnKey("space") {
-        val firstTarget = selectedSeed + 1
-        seeds.subList(firstTarget, seeds.size)
+        val firstTarget = bank.selectedSeed + 1
+        bank.seeds.subList(firstTarget, bank.seeds.size)
             .filter { it.isNotEmpty() }
             .forEachIndexed { index, _ ->
                 animateToTarget(firstTarget + index, index * animationDuration)
@@ -310,9 +315,9 @@ private fun Program.enableRoseAnimations() {
 
 private val animationEasing = Easing.CubicInOut
 private fun animateToTarget(targetSeedIndex: Int, predelay: Long = 0L) {
-    val targetSeed = seeds[targetSeedIndex]
+    val targetSeed = bank.seeds[targetSeedIndex]
     rose.animate(targetSeed.nValue, targetSeed.dValue, animationDuration, predelay, easing = animationEasing)
-    selectedSeed = targetSeedIndex
+    bank.selectedSeed = targetSeedIndex
 }
 
 private fun Program.enableVisibilityAnimations() {
@@ -334,13 +339,15 @@ private fun Program.enableVisibilityAnimations() {
         reveal = Reveal.GRADUAL_OUT
         revealChangeFrame = frameCount
     }
-            }
+}
 
-private fun Program.executeOnKey(keyName: String, function: () -> Unit) {
-    keyboard.keyUp.listen {
-        if (it.name == keyName) {
-            function()
-        }
+fun Program.enableSeedView() {
+    onFKeys { group -> bank.setGroup(group) }
+    executeOnKey("§") { bank.toggleEditMode() }
+    onNumberKeys { slot -> bank.setSlot(slot, rose.n, rose.d) }
+    bank.loadFonts()
+    if (showUi && !enableScreenRecording) extend {
+        bank.drawUi()
     }
 }
 
@@ -409,111 +416,6 @@ private fun Body.addFillButton() {
     }
 }
 
-private var selectedSeedGroup = 0
-private var selectedSeed = 0
-private val seedBankFile = File("data/maurer_roses_store/$seedBankName").apply { createNewFile() }
-private val seedBank = loadSeeds().toMutableList()
-private var seeds = seedBank[selectedSeedGroup].toMutableList()
-private val initialN = seeds[selectedSeed].nValue
-private val initialD = seeds[selectedSeed].dValue // For AnimationConfig.AX = 3.1
-private val rose = MaurerRose()
-
-private fun loadSeeds(): List<List<RoseSeed>> {
-    val loadedSeedBank = seedBankFile.readLines().map { line ->
-        line.split(";").map(RoseSeed::fromString)
-    }
-    return if (loadedSeedBank.size == 12) loadedSeedBank else newSeedBank()
-}
-
-private fun newSeedBank(): List<List<RoseSeed>> = List(12) { List(9) { RoseSeed.Empty } }
-private fun List<RoseSeed>.isGroupEmpty() = all { seed -> !seed.isNotEmpty() }
-
-private var editMode = false
-private lateinit var extraSmallFont: FontImageMap
-private lateinit var mediumFont: FontImageMap
-private lateinit var smallFont: FontImageMap
-private lateinit var bigFont: FontImageMap
-
-private fun Program.enableSeedView() {
-    onFKeys { group ->
-        selectedSeedGroup = group
-        selectedSeed = 0
-        seeds = seedBank[selectedSeedGroup].toMutableList()
-        if (seeds.isNotAllZeros()) {
-            rose.set(seeds[0].nValue, seeds[0].dValue)
-        }
-    }
-    executeOnKey("§") { editMode = !editMode }
-    onNumberKeys { slot -> if (editMode) {
-        writeSeed(slot)
-        editMode = false
-    } else readSeed(slot) }
-    extraSmallFont = loadFont("data/fonts/Rowdies-Light.ttf", 11.0)
-    smallFont = loadFont("data/fonts/Rowdies-Light.ttf", 12.0)
-    mediumFont = loadFont("data/fonts/Rowdies-Light.ttf", 18.0)
-    bigFont = loadFont("data/fonts/Rowdies-Bold.ttf", 40.0)
-    if (showUi && !enableScreenRecording) extend {
-        val topMargin = 185.0
-        drawSeedGroup(topMargin)
-        seeds.forEachIndexed { index, seed ->
-            if (seed.isNotEmpty()) drawSeed(index, seed.nValue, seed.dValue, topMargin)
-        }
-    }
-}
-
-private fun MutableList<RoseSeed>.isNotAllZeros() = any { seed -> seed.isNotEmpty() }
-
-fun readSeed(slot: Int) {
-    selectedSeed = slot
-    rose.set(seeds[slot].nValue, seeds[slot].dValue)
-}
-
-private fun writeSeed(slot: Int) {
-    selectedSeed = slot
-    val seed = RoseSeed(nValue = rose.n, dValue = rose.d)
-    seeds[slot] = seed
-    seedBank[selectedSeedGroup] = seeds
-    seedBankFile.write(seedBank)
-}
-
-private fun File.write(seedBank: List<List<RoseSeed>>) {
-    writeText(seedBank.joinToString("\n") { group ->
-        group.joinToString(";") { seed -> "${seed.nValue},${seed.dValue}" }
-    })
-}
-
-private fun Program.drawSeedGroup(topMargin: Double) {
-    with(drawer) {
-        isolated {
-            translate(20.0, topMargin)
-            fill = if (editMode) ColorRGBa.DARK_RED else ColorRGBa.GREY
-            circle(0.0, 0.0, 12.0)
-            fill = backgroundColor
-            fontMap = extraSmallFont
-            text("F${selectedSeedGroup + 1}", -7.0, 3.0)
-            fill = ColorRGBa.GREY
-            fontMap = mediumFont
-            text(seedBankName, 18.0, 5.0)
-        }
-    }
-}
-
-private fun Program.drawSeed(slot: Int, nValue: Double, dValue: Double, topMargin: Double) {
-    with(drawer) {
-        isolated {
-            translate(10.0, topMargin + 45.0 + slot * 40.0)
-            fill = if (selectedSeed == slot) ColorRGBa.DARK_GREY else ColorRGBa.GREY
-            fontMap = bigFont
-            text((slot + 1).toString(), 0.0, 0.0)
-            if (editMode) {
-                fontMap = smallFont
-                text("N: $nValue", 28.0, -15.0)
-                text("D: $dValue", 28.0, 0.0)
-            }
-        }
-    }
-}
-
 private fun Program.enableKeyboardControls() {
     onKeyEvent { keyEvent -> keyEvent.mapAsdfKeyRow { rose.n += it } }
     onKeyEvent { keyEvent -> keyEvent.mapZxcvKeyRow { rose.d += it } }
@@ -546,7 +448,7 @@ private fun Program.onKeyEvent(setValue: (KeyEvent) -> Unit) {
 private fun Program.setupScreenRecordingIfEnabled() {
     if (enableScreenRecording) {
         extend(ScreenRecorder()) {
-            name = "maurer_rose_vid_$seedBankName-${selectedSeedGroup.inc()}"
+            name = "maurer_rose_vid_$seedBankName-${bank.selectedSeedGroup.inc()}"
             frameRate = 60
         }
     }
@@ -574,495 +476,4 @@ private class RoseScreenshots : Screenshots() {
         val newD = d ?: rose.d
         name = "$customFolderName/rose_$newD-$newN.png"
     }
-}
-
-private fun KeyEvent.mapAsdfKeyRow(setValue: (Double) -> Unit) {
-    when (name) {
-        "a" -> setValue(-10.0)
-        "s" -> setValue(-1.0)
-        "d" -> setValue(-0.01)
-        "f" -> setValue(-0.001)
-        "g" -> setValue(-0.0005)
-        "t" -> setValue(-0.0001)
-        "r" -> setValue(-0.00005)
-        "e" -> setValue(-0.00001)
-        "w" -> setValue(-0.000005)
-        "q" -> setValue(-0.000001)
-        "p" -> setValue(+0.000001)
-        "o" -> setValue(+0.000005)
-        "i" -> setValue(+0.00001)
-        "u" -> setValue(+0.00005)
-        "y" -> setValue(+0.0001)
-        "h" -> setValue(+0.0005)
-        "j" -> setValue(+0.001)
-        "k" -> setValue(+0.01)
-        "l" -> setValue(+1.0)
-        ";" -> setValue(+10.0)
-    }
-}
-
-private fun KeyEvent.mapZxcvKeyRow(setValue: (Double) -> Unit) {
-    when (name) {
-        "z" -> setValue(-5.0)
-        "x" -> setValue(-0.001)
-        "c" -> setValue(-0.0001)
-        "v" -> setValue(-0.00005)
-        "b" -> setValue(-0.00001)
-        "n" -> setValue(+0.00001)
-        "m" -> setValue(+0.00005)
-        "," -> setValue(+0.0001)
-        "." -> setValue(+0.001)
-        "/" -> setValue(+5.0)
-    }
-}
-
-private fun Program.onNumberKeys(setSeedFunction: (Int) -> Unit) {
-    keyboard.keyDown.listen {
-        if (it.modifiers.isEmpty() && it.name in "123456789") setSeedFunction(it.name.toInt() - 1)
-    }
-}
-
-private fun Program.onCmdNumberKeys(function: (Int) -> Unit) {
-    keyboard.keyDown.listen {
-        if (it.modifiers.contains(KeyModifier.SUPER) && it.name in "123456789") function(it.name.toInt() - 1)
-    }
-}
-
-private fun Program.onFKeys(onFKey: (Int) -> Unit) {
-    val fKeys = listOf("f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12")
-    keyboard.keyDown.listen {
-        if (it.name in fKeys) {
-            onFKey(it.name.drop(1).toInt() - 1)
-        }
-    }
-}
-
-private data class RoseSeed(
-    val nValue: Double,
-    val dValue: Double,
-) {
-    fun isNotEmpty() = this != Empty
-
-    companion object {
-        fun fromString(input: String): RoseSeed {
-            val (nValue, dValue) = input.split(",")
-            return RoseSeed(nValue.toDouble(), dValue = dValue.toDouble())
-        }
-
-        val Empty = RoseSeed(0.0, 0.0)
-    }
-}
-
-private open class AnimationConfig(
-    val serial: Int,
-    val n1: Double,
-    val n2: Double,
-    val n3: Double,
-    val animationDuration: Long,
-    val animationEasing: Easing
-) {
-
-    object A1 : AnimationConfig(
-        serial = 1,
-        n1 = .5,
-        n2 = 1.0,
-        n3 = 2.0,
-        animationDuration = 10_000L,
-        animationEasing = Easing.SineInOut,
-    )
-
-    object A2 : AnimationConfig(
-        // Miso
-        serial = 2,
-        n1 = 2.0,
-        n2 = 3.0,
-        n3 = 4.0,
-        animationDuration = 10_000L,
-        animationEasing = Easing.SineInOut,
-    )
-
-    object A3 : AnimationConfig(
-        // Filip
-        serial = 3,
-        n1 = 4.0,
-        n2 = 5.0,
-        n3 = 6.0,
-        animationDuration = 10_000L,
-        animationEasing = Easing.SineInOut,
-    )
-
-    object A4 : AnimationConfig(
-        // Miruna
-        serial = 4,
-        n1 = 6.0,
-        n2 = 7.005,
-        n3 = 9.0,
-        animationDuration = 20_000L,
-        animationEasing = Easing.CubicInOut,
-    )
-
-    object A5 : AnimationConfig(
-        // Terka
-        serial = 5,
-        n1 = 9.0,
-        n2 = 11.0,
-        n3 = 13.0,
-        animationDuration = 20_000L,
-        animationEasing = Easing.CubicInOut,
-    )
-
-    object A6 : AnimationConfig(
-        // Otis (stage)
-        serial = 6,
-        n1 = 13.0,
-        n2 = 14.0111,
-        n3 = 15.0144,
-        animationDuration = 20_000L,
-        animationEasing = Easing.CubicInOut,
-    )
-
-    object A7 : AnimationConfig(
-        // Isa (butterfly)
-        serial = 7,
-        n1 = 15.0144,
-        n2 = 17.0186,
-        n3 = 19.0226,
-        animationDuration = 20_000L,
-        animationEasing = Easing.CubicInOut,
-    )
-
-    object Something1 : AnimationConfig(
-        serial = 100,
-        n1 = 142.821594,
-        n2 = 142.826144,
-        n3 = 142.828444,
-        animationDuration = 20_000L,
-        animationEasing = Easing.CubicInOut,
-    )
-
-    object Something2 : AnimationConfig(
-        serial = 101,
-        n1 = 201.132662,
-        n2 = 142.826144,
-        n3 = 142.828444,
-        animationDuration = 20_000L,
-        animationEasing = Easing.CubicInOut,
-    )
-}
-
-private object ShadeStyles {
-
-    val subtleEdges = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.MAROON.opacify(0.0),
-            ColorRGBa.MAROON.opacify(0.3),
-            ColorRGBa.MAGENTA.opacify(0.5),
-            ColorRGBa.YELLOW.opacify(0.5),
-        ), points = arrayOf(0.5, 0.8, 0.9, 1.0)
-    )
-
-    val unstableGrowth = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.SADDLE_BROWN.opacify(0.9),
-            ColorRGBa.SEA_GREEN.opacify(0.5),
-            ColorRGBa.BLACK.opacify(0.0),
-            ColorRGBa.BLACK.opacify(0.0),
-            ColorRGBa.PALE_VIOLET_RED.opacify(0.5),
-            ColorRGBa.YELLOW.opacify(0.8),
-        ), points = arrayOf(0.0, 0.2, 0.4, 0.6, 0.9, 1.0)
-    )
-
-    val bloomingHerb = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.FOREST_GREEN.opacify(0.9),
-            ColorRGBa.LIME_GREEN.opacify(0.5),
-            ColorRGBa.GREEN_YELLOW.opacify(0.9),
-            ColorRGBa.YELLOW.opacify(0.9),
-            ColorRGBa.MEDIUM_VIOLET_RED.opacify(0.9),
-            ColorRGBa.DARK_VIOLET.opacify(0.8),
-        ), points = arrayOf(0.0, 0.1, 0.3, 0.6, 0.9, 1.0)
-    )
-
-    val beautifulFlower = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.LIME_GREEN.opacify(0.8),
-            ColorRGBa.GREEN_YELLOW.opacify(0.8),
-            ColorRGBa.YELLOW.opacify(0.9),
-            ColorRGBa.MEDIUM_VIOLET_RED.opacify(0.9),
-            ColorRGBa.DARK_RED.opacify(0.8),
-            ColorRGBa.DARK_VIOLET.opacify(0.8),
-        ), points = arrayOf(0.0, 0.1, 0.3, 0.6, 0.9, 1.0)
-    )
-
-    val blackFlower = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.YELLOW.opacify(0.9),
-            ColorRGBa.YELLOW.opacify(0.7),
-            ColorRGBa.ORANGE.opacify(0.6),
-            ColorRGBa.ORANGE_RED.opacify(0.4),
-            ColorRGBa.DARK_RED.opacify(0.2),
-            ColorRGBa.BLACK.opacify(1.0),
-        ), points = arrayOf(0.0, 0.2, 0.45, 0.55, 0.8, 0.9, 0.96)
-    )
-
-    val yellowAura = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.YELLOW.opacify(0.7),
-            ColorRGBa.YELLOW.opacify(0.2),
-            ColorRGBa.BLACK.opacify(1.0),
-        ), points = arrayOf(0.0, 0.5, 0.7, 0.96)
-    )
-
-    val yellowAuraSmall = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.YELLOW.opacify(0.7),
-            ColorRGBa.YELLOW.opacify(0.2),
-            ColorRGBa.BLACK.opacify(1.0),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val yellowAuraWhiteFrame = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.BLACK.opacify(1.0),
-            ColorRGBa.YELLOW.opacify(0.7),
-            ColorRGBa.YELLOW.opacify(1.0),
-            ColorRGBa.WHITE.opacify(1.0),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val greenVioletLinear = linearGradient(
-        ColorRGBa.LIME_GREEN,
-        ColorRGBa.BLUE_VIOLET,
-        rotation = 300.0
-    )
-
-    val snowflake1 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.GOLD.opacify(0.7),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.5),
-            ColorRGBa.SKY_BLUE.opacify(0.6),
-            ColorRGBa.SKY_BLUE.opacify(1.0),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake2 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.5),
-            ColorRGBa.TURQUOISE.opacify(0.5),
-            ColorRGBa.LIGHT_PINK.opacify(0.5),
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake3 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.5),
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.DARK_TURQUOISE.opacify(0.8),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.5),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake4 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.PALE_VIOLET_RED.opacify(0.5),
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.DARK_RED.opacify(0.3),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.5),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake5 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.BLUE.opacify(0.1),
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.LIGHT_SEA_GREEN.opacify(0.4),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.3),
-            ColorRGBa.MEDIUM_TURQUOISE.opacify(0.4),
-        ), points = arrayOf(0.0, 0.3, 0.6, 0.76)
-    )
-
-    val snowflake6 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(5.0),
-            ColorRGBa.DARK_GREEN.opacify(0.3),
-            ColorRGBa.MEDIUM_TURQUOISE.opacify(0.5),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.3),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake7 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.YELLOW.opacify(0.5),
-            ColorRGBa.MEDIUM_TURQUOISE.opacify(0.5),
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.DODGER_BLUE.opacify(0.8),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.2),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake8 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(5.0),
-            ColorRGBa.DARK_GREEN.opacify(0.3),
-            ColorRGBa.MEDIUM_TURQUOISE.opacify(0.5),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.3),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake9 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(5.0),
-            ColorRGBa.WHITE_SMOKE.opacify(1.0),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.3),
-            ColorRGBa.DARK_GREEN.opacify(0.6),
-            ColorRGBa.MEDIUM_TURQUOISE.opacify(0.5),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake10 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(5.0),
-            ColorRGBa.DEEP_SKY_BLUE.opacify(0.6),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.3),
-            ColorRGBa.DARK_ORANGE.opacify(0.6),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.5),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake11 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(5.0),
-            ColorRGBa.WHITE_SMOKE.opacify(0.9),
-            ColorRGBa.SKY_BLUE.opacify(0.3),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.5),
-            ColorRGBa.GOLD.opacify(0.3),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.76)
-    )
-
-    val snowflake12 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.NAVAJO_WHITE.opacify(0.5),
-            ColorRGBa.CORAL.opacify(0.3),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(5.0),
-            ColorRGBa.WHITE_SMOKE.opacify(0.9),
-            ColorRGBa.SEA_GREEN.opacify(0.4),
-        ), points = arrayOf(0.0, 0.6, 0.7, 0.86)
-    )
-
-    val snowflake13 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(0.9),
-            ColorRGBa.PALE_VIOLET_RED.opacify(0.5),
-            ColorRGBa.DARK_RED.opacify(0.5),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.8),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(1.0),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.8),
-        ), points = arrayOf(0.0, 0.4, 0.75, 0.8, 0.86)
-    )
-
-    val snowflake14 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.YELLOW.opacify(0.5),
-            ColorRGBa.DARK_RED.opacify(0.5),
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.PALE_VIOLET_RED.opacify(0.5),
-            ColorRGBa.DODGER_BLUE.opacify(0.8),
-            ColorRGBa.DARK_BLUE.opacify(0.4),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.2),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.6, 0.74, 0.86)
-    )
-
-    val snowflake15 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.YELLOW.opacify(0.7),
-            ColorRGBa.TURQUOISE.opacify(0.5),
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.YELLOW.opacify(0.5),
-            ColorRGBa.DARK_TURQUOISE.opacify(0.6),
-            ColorRGBa.TURQUOISE.opacify(0.4),
-            ColorRGBa.LIGHT_SKY_BLUE.opacify(0.5),
-        ), points = arrayOf(0.0, 0.3, 0.5, 0.6, 0.74, 0.9)
-    )
-
-    val snowflake16 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.SADDLE_BROWN.opacify(0.7),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.5),
-            ColorRGBa.FOREST_GREEN.opacify(0.5),
-            ColorRGBa.ORANGE.opacify(0.6),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.4),
-        ), points = arrayOf(0.0, 0.6, 0.7, 0.84, 0.95)
-    )
-
-    val snowflake17 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.ROYAL_BLUE.opacify(0.7),
-            ColorRGBa.WHITE_SMOKE.opacify(0.5),
-            ColorRGBa.DODGER_BLUE.opacify(0.5),
-            ColorRGBa.DARK_ORANGE.opacify(0.3),
-            ColorRGBa.BLUE_STEEL.opacify(0.4),
-        ), points = arrayOf(0.0, 0.6, 0.7, 0.9, 0.98)
-    )
-
-    val snowflake18 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.ORANGE_RED.opacify(0.7),
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.LIGHT_SEA_GREEN.opacify(0.4),
-            ColorRGBa.DARK_ORANGE.opacify(0.3),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.2),
-        ), points = arrayOf(0.0, 0.4, 0.7, 0.78)
-    )
-
-    val snowflake19 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.ORANGE_RED.opacify(0.7),
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.CRIMSON.opacify(0.4),
-            ColorRGBa.DARK_ORANGE.opacify(0.3),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.2),
-        ), points = arrayOf(0.0, 0.4, 0.7, 0.78)
-    )
-
-    val snowflake20 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.DARK_GREEN.opacify(0.4),
-            ColorRGBa.PALE_TURQUOISE.opacify(0.6),
-            ColorRGBa.CRIMSON.opacify(0.4),
-            ColorRGBa.FLORAL_WHITE.opacify(0.3),
-            ColorRGBa.DARK_ORANGE.opacify(0.3),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.3),
-        ), points = arrayOf(0.0, 0.6, 0.7, 0.78, 0.84, 0.91)
-    )
-
-    val snowflake21 = NPointRadialGradient(
-        arrayOf(
-            ColorRGBa.WHITE_SMOKE.opacify(0.3),
-            ColorRGBa.DARK_GREEN.opacify(0.4),
-            ColorRGBa.DARK_OLIVE_GREEN.opacify(0.5),
-            ColorRGBa.DARK_ORANGE.opacify(0.3),
-            ColorRGBa.PALE_TURQUOISE.opacify(0.6),
-            ColorRGBa.CRIMSON.opacify(0.4),
-            ColorRGBa.NAVAJO_WHITE.opacify(0.3),
-        ), points = arrayOf(0.0, 0.6, 0.7, 0.78, 0.84, 0.91)
-    )
 }
