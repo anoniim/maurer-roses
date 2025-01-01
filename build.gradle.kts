@@ -3,10 +3,10 @@ import org.gradle.internal.os.OperatingSystem
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-group = "org.openrndr.template"
+group = "net.solvetheriddle.openrndr.maurer"
 version = "1.0.0"
 
-val applicationMainClass = "TemplateProgramKt"
+val applicationMainClass = "MaurerRoseKt"
 
 /**  ## additional ORX features to be added to this project */
 val orxFeatures = setOf<String>(
@@ -19,7 +19,7 @@ val orxFeatures = setOf<String>(
 //  "orx-compute-graph-nodes",
     "orx-delegate-magic",
 //  "orx-dnk3",
-//  "orx-easing",
+    "orx-easing",
     "orx-envelopes",
 //  "orx-expression-evaluator",
 //  "orx-file-watcher",
@@ -144,6 +144,7 @@ java {
 }
 tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "11"
+    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
 }
 
 // ------------------------------------------------------------------------------------------------------------------ //
