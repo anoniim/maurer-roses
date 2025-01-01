@@ -1,4 +1,4 @@
-package net.solvetheriddle.openrndr
+package net.solvetheriddle.openrndr.maurer.styles
 
 import org.openrndr.color.ColorRGBa
 import org.openrndr.color.Linearity

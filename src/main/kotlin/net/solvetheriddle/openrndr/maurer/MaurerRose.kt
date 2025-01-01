@@ -1,9 +1,10 @@
 @file:Suppress("RedundantNullableReturnType", "RedundantSuppression")
 package net.solvetheriddle.openrndr.maurer
 
-import net.solvetheriddle.openrndr.Display
 import net.solvetheriddle.openrndr.maurer.bank.SeedBank
-import net.solvetheriddle.openrndr.sketchSize
+import net.solvetheriddle.openrndr.maurer.styles.ShadeStyles
+import net.solvetheriddle.openrndr.maurer.ui.*
+import net.solvetheriddle.openrndr.maurer.ui.Display
 import org.openrndr.*
 import org.openrndr.animatable.Animatable
 import org.openrndr.animatable.easing.Easing

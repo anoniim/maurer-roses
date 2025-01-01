@@ -1,4 +1,4 @@
-package net.solvetheriddle.openrndr.maurer
+package net.solvetheriddle.openrndr.maurer.ui
 
 import org.openrndr.KeyEvent
 import org.openrndr.KeyModifier

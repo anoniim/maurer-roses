@@ -1,4 +1,4 @@
-package net.solvetheriddle.openrndr.maurer
+package net.solvetheriddle.openrndr.maurer.styles
 
 import org.openrndr.animatable.easing.Easing
 

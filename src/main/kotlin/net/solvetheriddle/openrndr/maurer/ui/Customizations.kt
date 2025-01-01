@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package net.solvetheriddle.openrndr
+package net.solvetheriddle.openrndr.maurer.ui
 
 import org.openrndr.Configuration
 import org.openrndr.Fullscreen

@@ -128,19 +128,3 @@ class SeedBank(
         bigFont = loadFont("data/fonts/Rowdies-Bold.ttf", 40.0)
     }
 }
-
-data class RoseSeed(
-    val nValue: Double,
-    val dValue: Double,
-) {
-    fun isNotEmpty() = this != Empty
-
-    companion object {
-        fun fromString(input: String): RoseSeed {
-            val (nValue, dValue) = input.split(",")
-            return RoseSeed(nValue.toDouble(), dValue = dValue.toDouble())
-        }
-
-        val Empty = RoseSeed(0.0, 0.0)
-    }
-}
