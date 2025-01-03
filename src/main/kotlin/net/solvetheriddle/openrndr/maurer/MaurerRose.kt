@@ -30,6 +30,7 @@ import kotlin.properties.Delegates
 private val useDisplay = Display.MACBOOK_SQUARE
 private const val enableScreenshots = false // on SPACE, disables rose animations
 private const val enableScreenRecording = false // automatically hides UI when enabled
+private const val enable3dExport = false // on SPACE
 private const val seedBankName = "squareWall" // showcase, playground, squareWall, winter24_1
 private const val showUi = true
 
@@ -80,7 +81,10 @@ fun main() {
             // UI
             enableSeedView()
             addUiIfEnabled()
-            enableKeyboardControls()
+            enableKeyboardControls(
+                { rose.n += it },
+                { rose.d += it }
+            )
 
             // TODO add WindowedGUI
         }
@@ -358,8 +362,8 @@ private lateinit var dSlider: Slider
 private fun Program.addUiIfEnabled() {
     if (showUi && !enableScreenRecording) extend(ControlManager()) {
         layout {
-            addNSlider()
-            addDSlider()
+            nSlider = addNSlider(initialN) { rose.n = it }
+            dSlider = addDSlider(initialD) { rose.d = it }
             addCurvesButton()
             addFillButton()
             // TODO add Stroke button
@@ -367,84 +371,9 @@ private fun Program.addUiIfEnabled() {
     }
 }
 
-private fun Body.addNSlider() {
-    nSlider = slider {
-        label = "n"
-        range = Range(0.0, 300.0)
-        value = initialN
-        precision = 6
-        events.valueChanged.listen {
-            rose.n = it.newValue
-        }
-    }
-}
-
-private fun Body.addDSlider() {
-    dSlider = slider {
-        label = "d"
-        range = Range(0.0, 300.0)
-        value = initialD
-        precision = 6
-        events.valueChanged.listen {
-            rose.d = it.newValue
-        }
-    }
-}
-
-private var curvesEnabled = false
-
-private fun Body.addCurvesButton() {
-    button {
-        fun getCurvesButtonLabel() = if (curvesEnabled) "Curves ON" else "Curves OFF"
-        label = getCurvesButtonLabel()
-        events.clicked.listen {
-            curvesEnabled = !curvesEnabled
-            label = getCurvesButtonLabel()
-        }
-    }
-}
-
-private var fillEnabled = false
-
-private fun Body.addFillButton() {
-    button {
-        fun getFillButtonLabel() = if (fillEnabled) "Fill ON" else "Fill OFF"
-        label = getFillButtonLabel()
-        events.clicked.listen {
-            fillEnabled = !fillEnabled
-            label = getFillButtonLabel()
-        }
-    }
-}
-
-private fun Program.enableKeyboardControls() {
-    onKeyEvent { keyEvent -> keyEvent.mapAsdfKeyRow { rose.n += it } }
-    onKeyEvent { keyEvent -> keyEvent.mapZxcvKeyRow { rose.d += it } }
-    setupZoomControl()
-}
-
-private var zoom = 0.95
-
-fun Program.setupZoomControl() {
-    mouse.buttonUp.listen {
-        if (it.button == MouseButton.CENTER) {
-            zoom = 0.95
-        }
-    }
-    val scrollSpeedDampening = 50
-    mouse.scrolled.listen {
-        zoom += it.rotation.y / scrollSpeedDampening
-    }
-    onKeyEvent {
-        if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "+") zoom += 0.1
-        if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "-") zoom -= 0.1
-    }
-}
-
-private fun Program.onKeyEvent(setValue: (KeyEvent) -> Unit) {
-    keyboard.keyRepeat.listen(setValue)
-    keyboard.keyDown.listen(setValue)
-}
+var curvesEnabled = false
+var fillEnabled = false
+var zoom = 0.95
 
 private fun Program.setupScreenRecordingIfEnabled() {
     if (enableScreenRecording) {

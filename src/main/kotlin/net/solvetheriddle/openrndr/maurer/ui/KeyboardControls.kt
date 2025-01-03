@@ -1,8 +1,59 @@
 package net.solvetheriddle.openrndr.maurer.ui
 
+import net.solvetheriddle.openrndr.maurer.curvesEnabled
+import net.solvetheriddle.openrndr.maurer.fillEnabled
+import net.solvetheriddle.openrndr.maurer.zoom
 import org.openrndr.KeyEvent
 import org.openrndr.KeyModifier
+import org.openrndr.MouseButton
 import org.openrndr.Program
+import org.openrndr.panel.elements.*
+
+fun Body.addNSlider(initialN: Double, onValueChanged: (Double) -> Unit): Slider {
+    return slider {
+        label = "n"
+        range = Range(0.0, 300.0)
+        value = initialN
+        precision = 6
+        events.valueChanged.listen {
+            onValueChanged(it.newValue)
+        }
+    }
+}
+
+fun Body.addDSlider(initialD: Double, onValueChanged: (Double) -> Unit): Slider {
+    return slider {
+        label = "d"
+        range = Range(0.0, 300.0)
+        value = initialD
+        precision = 6
+        events.valueChanged.listen {
+            onValueChanged(it.newValue)
+        }
+    }
+}
+
+fun Program.enableKeyboardControls(onNChanged: (Double) -> Unit, onDChanged: (Double) -> Unit) {
+    onKeyEvent { keyEvent -> keyEvent.mapAsdfKeyRow(onNChanged) }
+    onKeyEvent { keyEvent -> keyEvent.mapZxcvKeyRow(onDChanged) }
+    setupZoomControl()
+}
+
+fun Program.setupZoomControl() {
+    mouse.buttonUp.listen {
+        if (it.button == MouseButton.CENTER) {
+            zoom = 0.95
+        }
+    }
+    val scrollSpeedDampening = 50
+    mouse.scrolled.listen {
+        zoom += it.rotation.y / scrollSpeedDampening
+    }
+    onKeyEvent {
+        if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "+") zoom += 0.1
+        if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "-") zoom -= 0.1
+    }
+}
 
 fun KeyEvent.mapAsdfKeyRow(setValue: (Double) -> Unit) {
     when (name) {
@@ -69,6 +120,33 @@ fun Program.executeOnKey(keyName: String, function: () -> Unit) {
     keyboard.keyUp.listen {
         if (it.name == keyName) {
             function()
+        }
+    }
+}
+
+fun Program.onKeyEvent(setValue: (KeyEvent) -> Unit) {
+    keyboard.keyRepeat.listen(setValue)
+    keyboard.keyDown.listen(setValue)
+}
+
+fun Body.addCurvesButton() {
+    button {
+        fun getCurvesButtonLabel() = if (curvesEnabled) "Curves ON" else "Curves OFF"
+        label = getCurvesButtonLabel()
+        events.clicked.listen {
+            curvesEnabled = !curvesEnabled
+            label = getCurvesButtonLabel()
+        }
+    }
+}
+
+fun Body.addFillButton() {
+    button {
+        fun getFillButtonLabel() = if (fillEnabled) "Fill ON" else "Fill OFF"
+        label = getFillButtonLabel()
+        events.clicked.listen {
+            fillEnabled = !fillEnabled
+            label = getFillButtonLabel()
         }
     }
 }
