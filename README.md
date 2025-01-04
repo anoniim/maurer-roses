@@ -1,6 +1,6 @@
 # Maths is beautiful
 
-This program provides tools to animate geometric shapes called [Maurer Roses](https://en.wikipedia.org/wiki/Maurer_rose).
+This [OPENRNDR](https://openrndr.org/) program provides tools to create and animate geometric shapes called [Maurer Roses](https://en.wikipedia.org/wiki/Maurer_rose).
 
 # Controls
 
