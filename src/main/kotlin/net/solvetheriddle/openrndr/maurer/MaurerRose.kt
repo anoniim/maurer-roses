@@ -1,4 +1,6 @@
-@file:Suppress("RedundantNullableReturnType", "RedundantSuppression")
+@file:Suppress("RedundantNullableReturnType", "RedundantSuppression", "KotlinConstantConditions",
+    "SimplifyBooleanWithConstants"
+)
 package net.solvetheriddle.openrndr.maurer
 
 import net.solvetheriddle.openrndr.maurer.bank.SeedBank
@@ -27,24 +29,25 @@ import kotlin.math.*
 import kotlin.properties.Delegates
 
 // sketch config
-private val useDisplay = Display.MACBOOK_SQUARE
-private const val enableScreenshots = false // on SPACE, disables rose animations
+private val useDisplay = Display.PRINT_SQUARE_SMALL // Display.FULLSCREEN
+private const val enableScreenshots = true // on SPACE, disables rose animations
 private const val enableScreenRecording = false // automatically hides UI when enabled
 private const val enable3dExport = false // on SPACE
 private const val seedBankName = "squareWall" // showcase, playground, squareWall, winter24_1
-private const val showUi = true
+private const val showUi = false
 
 // config background
-private val roseBackgroundColor = ColorRGBa.BLACK
+private val roseBackgroundColor = ColorRGBa.WHITE
 private val backgroundImagePath: String? = null // "data/images/snowflake21.jpeg" // null
 private const val backgroundImageFadeOutDuration = 60 * 3 // 0.0 to turn off
-private fun backgroundShadeStyle() = null // ShadeStyles.snowflake21 // greenVioletLinear
+private fun backgroundShadeStyle() = ShadeStyles.background // ShadeStyles.unstableGrowth / null
 
 // config rose stroke, color, fill
-private const val lineOpacity = 0.9 // 0.6
+private const val lineOpacity = 1.0 // 0.6
 private const val allowPartialShapes = true // true for smoother animations and cut-off stills; false for flashy animations and complete stills
-private val roseStrokeColor = ColorRGBa.WHITE // TRANSPARENT
-private fun fillShadeStyle() = ShadeStyles.beautifulFlower
+private val roseStrokeColor = ColorRGBa.BLACK.opacify(0.9) // TRANSPARENT
+private val strokeShadeStyle: ShadeStyle? = ShadeStyles.foreground
+private fun fillShadeStyle() = null // ShadeStyles.beautifulFlower
 
 // config animations
 private const val fadeOutBackgroundAutomatically = false
@@ -191,12 +194,23 @@ private class MaurerRose : Animatable() {
         ::d.animate(targetDValue, duration, easing, predelay)
     }
 
-    context(Program)
+    context(program: Program)
     fun draw() {
-        drawer.shadeStyle = if (fillEnabled) fillShadeStyle() else null
-        drawer.stroke = getStroke()
-        val contour = shapeContour()
-        if (!contour.empty) drawer.contour(contour)
+        program.drawer.shadeStyle = if (fillEnabled) fillShadeStyle() else null
+        program.drawer.stroke = program.getStroke()
+        program.setStrokeShadeStyleIfEnabled()
+        val contour = program.shapeContour()
+        if (!contour.empty) program.drawer.contour(contour)
+    }
+
+    var shadeStyleDebugInfoPrinted = false
+    private fun Program.setStrokeShadeStyleIfEnabled() {
+        if (strokeShadeStyle != null) {
+            strokeShadeStyle.parameter("resetFill", true)
+            strokeShadeStyle.fragmentTransform = strokeShadeStyle.fragmentTransform?.replace("x_fill", "x_stroke")
+            if (!shadeStyleDebugInfoPrinted) { println(strokeShadeStyle.fragmentTransform); shadeStyleDebugInfoPrinted = true}
+            drawer.shadeStyle = strokeShadeStyle
+        }
     }
 
     private fun Program.getStroke(): ColorRGBa {
@@ -398,7 +412,7 @@ private class RoseScreenshots : Screenshots() {
     private val customFolderName = "screenshots/maurer_roses"
 
     init {
-        name = "$customFolderName/rose_${rose.d}-${rose.n}.png"
+        name = "$customFolderName/rose_${rose.n}-${rose.d}.png"
     }
 
     fun updateName(n: Double? = null, d: Double? = null) {

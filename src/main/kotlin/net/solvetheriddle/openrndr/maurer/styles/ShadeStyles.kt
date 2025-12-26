@@ -2,8 +2,11 @@ package net.solvetheriddle.openrndr.maurer.styles
 
 import org.openrndr.color.ColorRGBa
 import org.openrndr.extra.color.presets.*
+import org.openrndr.extra.shadestyles.NPointLinearGradient
 import org.openrndr.extra.shadestyles.NPointRadialGradient
 import org.openrndr.extra.shadestyles.linearGradient
+
+import org.openrndr.extra.shadestyles.fills.gradients.gradient
 
 object ShadeStyles {
 
@@ -15,6 +18,8 @@ object ShadeStyles {
             ColorRGBa.YELLOW.opacify(0.5),
         ), points = arrayOf(0.5, 0.8, 0.9, 1.0)
     )
+
+    // ... (rest of the file until yellowWhite)
 
     val unstableGrowth = NPointRadialGradient(
         arrayOf(
@@ -320,4 +325,34 @@ object ShadeStyles {
             ColorRGBa.NAVAJO_WHITE.opacify(0.3),
         ), points = arrayOf(0.0, 0.6, 0.7, 0.78, 0.84, 0.91)
     )
+
+    val cvBanner = NPointLinearGradient(
+        arrayOf(
+            ColorRGBa(0.30, 0.87, 0.15),
+            ColorRGBa(0.06, 0.54, 0.82),
+            ColorRGBa(0.73, 0.01, 0.82),
+        ), rotation = 280.0
+    )
+
+    val background = gradient<ColorRGBa> {
+        radial {
+            stops[0.0] = ColorRGBa.BLACK
+            stops[0.1] = ColorRGBa.BLACK
+            stops[0.20] = ColorRGBa.GREY
+            stops[0.45] = ColorRGBa.LIGHT_CORAL.opacify(0.3)
+            stops[0.95] = ColorRGBa.WHITE
+            stops[1.0] = ColorRGBa.WHITE
+        }
+    }
+
+    val foreground = gradient<ColorRGBa> {
+        radial {
+            stops[0.0] = ColorRGBa.WHITE
+            stops[0.2] = ColorRGBa.WHITE
+            stops[0.30] = ColorRGBa.DARK_ORANGE
+            stops[0.6] = ColorRGBa.DARK_ORANGE
+            stops[0.7] = ColorRGBa.RED
+            stops[1.0] = ColorRGBa.RED
+        }
+    }
 }

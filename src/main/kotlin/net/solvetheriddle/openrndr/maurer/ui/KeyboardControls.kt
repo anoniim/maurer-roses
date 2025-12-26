@@ -12,7 +12,7 @@ import org.openrndr.panel.elements.*
 fun Body.addNSlider(initialN: Double, onValueChanged: (Double) -> Unit): Slider {
     return slider {
         label = "n"
-        range = Range(0.0, 300.0)
+        range = Range(0.0, 30000.0)
         value = initialN
         precision = 6
         events.valueChanged.listen {
@@ -24,7 +24,7 @@ fun Body.addNSlider(initialN: Double, onValueChanged: (Double) -> Unit): Slider 
 fun Body.addDSlider(initialD: Double, onValueChanged: (Double) -> Unit): Slider {
     return slider {
         label = "d"
-        range = Range(0.0, 300.0)
+        range = Range(0.0, 30000.0)
         value = initialD
         precision = 6
         events.valueChanged.listen {

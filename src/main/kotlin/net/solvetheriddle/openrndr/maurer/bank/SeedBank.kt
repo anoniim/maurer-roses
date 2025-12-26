@@ -112,19 +112,20 @@ class SeedBank(
         editMode = !editMode
     }
 
-    context(Program)
+    context(program: Program)
     fun drawUi() {
         val topMargin = 185.0
-        drawSeedGroup(topMargin)
+        program.drawSeedGroup(topMargin)
         seeds.forEachIndexed { index, seed ->
-            if (seed.isNotEmpty()) drawSeed(index, seed.nValue, seed.dValue, topMargin)
+            if (seed.isNotEmpty()) program.drawSeed(index, seed.nValue, seed.dValue, topMargin)
         }
     }
 
+    context(program: Program)
     fun loadFonts() {
-        extraSmallFont = loadFont("data/fonts/Rowdies-Light.ttf", 11.0)
-        smallFont = loadFont("data/fonts/Rowdies-Light.ttf", 12.0)
-        mediumFont = loadFont("data/fonts/Rowdies-Light.ttf", 18.0)
-        bigFont = loadFont("data/fonts/Rowdies-Bold.ttf", 40.0)
+        extraSmallFont = program.loadFont("data/fonts/Rowdies-Light.ttf", 11.0)
+        smallFont = program.loadFont("data/fonts/Rowdies-Light.ttf", 12.0)
+        mediumFont = program.loadFont("data/fonts/Rowdies-Light.ttf", 18.0)
+        bigFont = program.loadFont("data/fonts/Rowdies-Bold.ttf", 40.0)
     }
 }
