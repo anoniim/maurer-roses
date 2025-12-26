@@ -418,6 +418,6 @@ private class RoseScreenshots : Screenshots() {
     fun updateName(n: Double? = null, d: Double? = null) {
         val newN = n ?: rose.n
         val newD = d ?: rose.d
-        name = "$customFolderName/rose_$newD-$newN.png"
+        name = "$customFolderName/rose_$newN-$newD.png"
     }
 }
