@@ -1,4 +1,6 @@
-@file:Suppress("RedundantNullableReturnType", "RedundantSuppression")
+@file:Suppress("RedundantNullableReturnType", "RedundantSuppression", "KotlinConstantConditions",
+    "SimplifyBooleanWithConstants"
+)
 package net.solvetheriddle.openrndr.maurer
 
 import net.solvetheriddle.openrndr.maurer.bank.SeedBank
@@ -27,23 +29,25 @@ import kotlin.math.*
 import kotlin.properties.Delegates
 
 // sketch config
-private val useDisplay = Display.MACBOOK_SQUARE
-private const val enableScreenshots = false // on SPACE, disables rose animations
+private val useDisplay = Display.PRINT_SQUARE_SMALL // Display.FULLSCREEN
+private const val enableScreenshots = true // on SPACE, disables rose animations
 private const val enableScreenRecording = false // automatically hides UI when enabled
+private const val enable3dExport = false // on SPACE
 private const val seedBankName = "squareWall" // showcase, playground, squareWall, winter24_1
-private const val showUi = true
+private const val showUi = false
 
 // config background
-private val roseBackgroundColor = ColorRGBa.BLACK
+private val roseBackgroundColor = ColorRGBa.WHITE
 private val backgroundImagePath: String? = null // "data/images/snowflake21.jpeg" // null
 private const val backgroundImageFadeOutDuration = 60 * 3 // 0.0 to turn off
-private fun backgroundShadeStyle() = null // ShadeStyles.snowflake21 // greenVioletLinear
+private fun backgroundShadeStyle() = ShadeStyles.background // ShadeStyles.unstableGrowth / null
 
 // config rose stroke, color, fill
-private const val lineOpacity = 0.9 // 0.6
+private const val lineOpacity = 1.0 // 0.6
 private const val allowPartialShapes = true // true for smoother animations and cut-off stills; false for flashy animations and complete stills
-private val roseStrokeColor = ColorRGBa.WHITE // TRANSPARENT
-private fun fillShadeStyle() = ShadeStyles.beautifulFlower
+private val roseStrokeColor = ColorRGBa.BLACK.opacify(0.9) // TRANSPARENT
+private val strokeShadeStyle: ShadeStyle? = ShadeStyles.foreground
+private fun fillShadeStyle() = null // ShadeStyles.beautifulFlower
 
 // config animations
 private const val fadeOutBackgroundAutomatically = false
@@ -80,7 +84,10 @@ fun main() {
             // UI
             enableSeedView()
             addUiIfEnabled()
-            enableKeyboardControls()
+            enableKeyboardControls(
+                { rose.n += it },
+                { rose.d += it }
+            )
 
             // TODO add WindowedGUI
         }
@@ -187,12 +194,23 @@ private class MaurerRose : Animatable() {
         ::d.animate(targetDValue, duration, easing, predelay)
     }
 
-    context(Program)
+    context(program: Program)
     fun draw() {
-        drawer.shadeStyle = if (fillEnabled) fillShadeStyle() else null
-        drawer.stroke = getStroke()
-        val contour = shapeContour()
-        if (!contour.empty) drawer.contour(contour)
+        program.drawer.shadeStyle = if (fillEnabled) fillShadeStyle() else null
+        program.drawer.stroke = program.getStroke()
+        program.setStrokeShadeStyleIfEnabled()
+        val contour = program.shapeContour()
+        if (!contour.empty) program.drawer.contour(contour)
+    }
+
+    var shadeStyleDebugInfoPrinted = false
+    private fun Program.setStrokeShadeStyleIfEnabled() {
+        if (strokeShadeStyle != null) {
+            strokeShadeStyle.parameter("resetFill", true)
+            strokeShadeStyle.fragmentTransform = strokeShadeStyle.fragmentTransform?.replace("x_fill", "x_stroke")
+            if (!shadeStyleDebugInfoPrinted) { println(strokeShadeStyle.fragmentTransform); shadeStyleDebugInfoPrinted = true}
+            drawer.shadeStyle = strokeShadeStyle
+        }
     }
 
     private fun Program.getStroke(): ColorRGBa {
@@ -358,8 +376,8 @@ private lateinit var dSlider: Slider
 private fun Program.addUiIfEnabled() {
     if (showUi && !enableScreenRecording) extend(ControlManager()) {
         layout {
-            addNSlider()
-            addDSlider()
+            nSlider = addNSlider(initialN) { rose.n = it }
+            dSlider = addDSlider(initialD) { rose.d = it }
             addCurvesButton()
             addFillButton()
             // TODO add Stroke button
@@ -367,84 +385,9 @@ private fun Program.addUiIfEnabled() {
     }
 }
 
-private fun Body.addNSlider() {
-    nSlider = slider {
-        label = "n"
-        range = Range(0.0, 300.0)
-        value = initialN
-        precision = 6
-        events.valueChanged.listen {
-            rose.n = it.newValue
-        }
-    }
-}
-
-private fun Body.addDSlider() {
-    dSlider = slider {
-        label = "d"
-        range = Range(0.0, 300.0)
-        value = initialD
-        precision = 6
-        events.valueChanged.listen {
-            rose.d = it.newValue
-        }
-    }
-}
-
-private var curvesEnabled = false
-
-private fun Body.addCurvesButton() {
-    button {
-        fun getCurvesButtonLabel() = if (curvesEnabled) "Curves ON" else "Curves OFF"
-        label = getCurvesButtonLabel()
-        events.clicked.listen {
-            curvesEnabled = !curvesEnabled
-            label = getCurvesButtonLabel()
-        }
-    }
-}
-
-private var fillEnabled = false
-
-private fun Body.addFillButton() {
-    button {
-        fun getFillButtonLabel() = if (fillEnabled) "Fill ON" else "Fill OFF"
-        label = getFillButtonLabel()
-        events.clicked.listen {
-            fillEnabled = !fillEnabled
-            label = getFillButtonLabel()
-        }
-    }
-}
-
-private fun Program.enableKeyboardControls() {
-    onKeyEvent { keyEvent -> keyEvent.mapAsdfKeyRow { rose.n += it } }
-    onKeyEvent { keyEvent -> keyEvent.mapZxcvKeyRow { rose.d += it } }
-    setupZoomControl()
-}
-
-private var zoom = 0.95
-
-fun Program.setupZoomControl() {
-    mouse.buttonUp.listen {
-        if (it.button == MouseButton.CENTER) {
-            zoom = 0.95
-        }
-    }
-    val scrollSpeedDampening = 50
-    mouse.scrolled.listen {
-        zoom += it.rotation.y / scrollSpeedDampening
-    }
-    onKeyEvent {
-        if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "+") zoom += 0.1
-        if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "-") zoom -= 0.1
-    }
-}
-
-private fun Program.onKeyEvent(setValue: (KeyEvent) -> Unit) {
-    keyboard.keyRepeat.listen(setValue)
-    keyboard.keyDown.listen(setValue)
-}
+var curvesEnabled = false
+var fillEnabled = false
+var zoom = 0.95
 
 private fun Program.setupScreenRecordingIfEnabled() {
     if (enableScreenRecording) {
@@ -469,12 +412,12 @@ private class RoseScreenshots : Screenshots() {
     private val customFolderName = "screenshots/maurer_roses"
 
     init {
-        name = "$customFolderName/rose_${rose.d}-${rose.n}.png"
+        name = "$customFolderName/rose_${rose.n}-${rose.d}.png"
     }
 
     fun updateName(n: Double? = null, d: Double? = null) {
         val newN = n ?: rose.n
         val newD = d ?: rose.d
-        name = "$customFolderName/rose_$newD-$newN.png"
+        name = "$customFolderName/rose_$newN-$newD.png"
     }
 }

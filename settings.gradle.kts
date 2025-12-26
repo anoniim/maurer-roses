@@ -1,4 +1,4 @@
-rootProject.name = "openrndr-template"
+rootProject.name = "maurer-roses"
 
 pluginManagement {
     repositories {

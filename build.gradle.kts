@@ -106,6 +106,7 @@ plugins {
 repositories {
     mavenCentral()
     mavenLocal()
+    maven("https://maven.openrndr.org")
 }
 
 dependencies {
@@ -139,12 +140,15 @@ dependencies {
 // ------------------------------------------------------------------------------------------------------------------ //
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
-tasks.withType<KotlinCompile> {
-    kotlinOptions.jvmTarget = "11"
-    kotlinOptions.freeCompilerArgs += "-Xcontext-receivers"
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+        freeCompilerArgs.add("-Xcontext-parameters")
+    }
 }
 
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -267,11 +271,13 @@ class Openrndr {
             "aarch64", "arm-v8" -> "macos-arm64"
             else -> "macos"
         }
+
         currOs.isLinux -> when (currArch) {
             "x86-64" -> "linux-x64"
             "aarch64" -> "linux-arm64"
             else -> throw IllegalArgumentException("architecture not supported: $currArch")
         }
+
         else -> throw IllegalArgumentException("os not supported: ${currOs.name}")
     }
 
@@ -288,7 +294,6 @@ class Openrndr {
             implementation(openrndr("openal"))
             runtimeOnly(openrndrNatives("openal"))
             implementation(openrndr("application"))
-            implementation(openrndr("svg"))
             implementation(openrndr("animatable"))
             implementation(openrndr("extensions"))
             implementation(openrndr("filter"))
