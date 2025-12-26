@@ -207,7 +207,6 @@ private class MaurerRose : Animatable() {
         if (strokeShadeStyle != null) {
             strokeShadeStyle.parameter("resetFill", true)
             strokeShadeStyle.fragmentTransform = strokeShadeStyle.fragmentTransform?.replace("x_fill", "x_stroke")
-            if (!shadeStyleDebugInfoPrinted) { println(strokeShadeStyle.fragmentTransform); shadeStyleDebugInfoPrinted = true}
             drawer.shadeStyle = strokeShadeStyle
         }
     }

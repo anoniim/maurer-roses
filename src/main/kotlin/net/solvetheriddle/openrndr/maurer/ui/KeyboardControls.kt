@@ -51,7 +51,7 @@ fun Program.setupZoomControl(defaultZoom: Double) {
         zoom += it.rotation.y / scrollSpeedDampening
     }
     onKeyEvent {
-        println("Pressed: ${it.modifiers} + ${it.key} (name: ${it.name})")
+        // DEBUG // println("Pressed: ${it.modifiers} + ${it.key} (name: ${it.name})")
         if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "+") zoom += 0.1
         if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "-") zoom -= 0.1
         if (it.key == KEY_ESCAPE) zoom = defaultZoom
