@@ -57,8 +57,6 @@ private const val animationDuration = 5_000L // milliseconds
 
 /**
  * This program draws and animates Maurer Rose - https://en.wikipedia.org/wiki/Maurer_rose.
- *
-
  */
 @Suppress("GrazieInspection")
 fun main() {
@@ -86,7 +84,8 @@ fun main() {
             addUiIfEnabled()
             enableKeyboardControls(
                 { rose.n += it },
-                { rose.d += it }
+                { rose.d += it },
+                DEFAULT_ZOOM
             )
 
             // TODO add WindowedGUI
@@ -387,7 +386,9 @@ private fun Program.addUiIfEnabled() {
 
 var curvesEnabled = false
 var fillEnabled = false
-var zoom = 0.95
+private const val DEFAULT_ZOOM = 0.95
+
+var zoom = DEFAULT_ZOOM
 
 private fun Program.setupScreenRecordingIfEnabled() {
     if (enableScreenRecording) {
@@ -409,7 +410,7 @@ private fun Program.setupScreenshotsIfEnabled() {
 
 private class RoseScreenshots : Screenshots() {
 
-    private val customFolderName = "screenshots/maurer_roses"
+    private val customFolderName = "screenshots/maurer_roses/$seedBankName-${bank.selectedSeedGroup.inc()}"
 
     init {
         name = "$customFolderName/rose_${rose.n}-${rose.d}.png"

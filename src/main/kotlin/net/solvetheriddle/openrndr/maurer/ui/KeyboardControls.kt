@@ -3,6 +3,7 @@ package net.solvetheriddle.openrndr.maurer.ui
 import net.solvetheriddle.openrndr.maurer.curvesEnabled
 import net.solvetheriddle.openrndr.maurer.fillEnabled
 import net.solvetheriddle.openrndr.maurer.zoom
+import org.openrndr.KEY_ESCAPE
 import org.openrndr.KeyEvent
 import org.openrndr.KeyModifier
 import org.openrndr.MouseButton
@@ -33,16 +34,16 @@ fun Body.addDSlider(initialD: Double, onValueChanged: (Double) -> Unit): Slider 
     }
 }
 
-fun Program.enableKeyboardControls(onNChanged: (Double) -> Unit, onDChanged: (Double) -> Unit) {
+fun Program.enableKeyboardControls(onNChanged: (Double) -> Unit, onDChanged: (Double) -> Unit, defaultZoom: Double) {
     onKeyEvent { keyEvent -> keyEvent.mapAsdfKeyRow(onNChanged) }
     onKeyEvent { keyEvent -> keyEvent.mapZxcvKeyRow(onDChanged) }
-    setupZoomControl()
+    setupZoomControl(defaultZoom)
 }
 
-fun Program.setupZoomControl() {
+fun Program.setupZoomControl(defaultZoom: Double) {
     mouse.buttonUp.listen {
         if (it.button == MouseButton.CENTER) {
-            zoom = 0.95
+            zoom = defaultZoom
         }
     }
     val scrollSpeedDampening = 50
@@ -50,8 +51,10 @@ fun Program.setupZoomControl() {
         zoom += it.rotation.y / scrollSpeedDampening
     }
     onKeyEvent {
+        println("Pressed: ${it.modifiers} + ${it.key} (name: ${it.name})")
         if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "+") zoom += 0.1
         if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "-") zoom -= 0.1
+        if (it.key == KEY_ESCAPE) zoom = defaultZoom
     }
 }
 
