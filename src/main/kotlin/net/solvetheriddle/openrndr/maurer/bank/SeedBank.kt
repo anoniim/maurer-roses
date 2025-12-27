@@ -21,7 +21,7 @@ class SeedBank(
         private set
     var selectedSeed = 0
     private val seedBankFile = File("data/maurer_roses_store/$seedBankName").apply { createNewFile() }
-    private lateinit var comments: MutableList<String>
+    private val comments = mutableListOf("")
     private val seedBank = loadSeeds().toMutableList()
     var seeds = seedBank[selectedSeedGroup].toMutableList()
 
@@ -44,11 +44,8 @@ class SeedBank(
     }
 
     private fun extractComments(line: String, index: Int): String = if (line.contains("//")) {
-        if (!this::comments.isInitialized) {
-            comments = mutableListOf("")
-        }
-        fillGapsInCommentsIfNeeded(index)
         val indexOfCommentSymbol = line.indexOf("//")
+        fillGapsInCommentsIfNeeded(index)
         comments[index] = line.substring(indexOfCommentSymbol)
         line.removeRange(startIndex = indexOfCommentSymbol, endIndex = line.lastIndex)
     } else line
@@ -85,7 +82,7 @@ class SeedBank(
             seedBank.forEachIndexed { index, seeds ->
                 append("F${index + 1} ___")
                 seeds.forEachIndexed { index, seed ->
-                    append(" ${index + 1}: ${seed.nValue},${seed.dValue};")
+                    if (seed.isNotEmpty()) append(" ${index + 1}: ${seed.nValue},${seed.dValue};")
                 }
                 fillGapsInCommentsIfNeeded(index)
                 append(comments[index])
