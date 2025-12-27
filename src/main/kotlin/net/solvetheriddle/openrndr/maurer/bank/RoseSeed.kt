@@ -8,8 +8,19 @@ data class RoseSeed(
 
     companion object {
         fun fromString(input: String): RoseSeed {
-            val (nValue, dValue) = input.split(",")
-            return RoseSeed(nValue.toDouble(), dValue = dValue.toDouble())
+            println(input)
+            return if (input.contains(",")) {
+                val (nValue, dValue) = input.split(",")
+                val nValueSanitized = removePrefixBefore(nValue, ':')
+                RoseSeed(nValueSanitized.toDouble(), dValue = dValue.toDouble())
+            } else Empty
+        }
+
+        @Suppress("SameParameterValue")
+        private fun removePrefixBefore(input: String, char: Char): String {
+            return if (input.contains(char)) {
+                input.removeRange(0..input.indexOfFirst { it == char })
+            } else input
         }
 
         val Empty = RoseSeed(0.0, 0.0)

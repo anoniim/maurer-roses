@@ -22,6 +22,7 @@ Control visibility and reveal of the rose:
 Save and load seeds:
  - Press § to toggle edit mode for seeds
  - Press 1-9 to read or write seeds
+ - Press DELETE to remove seed
 
 ## Shape animation
 Animate between pre-defined seeds:

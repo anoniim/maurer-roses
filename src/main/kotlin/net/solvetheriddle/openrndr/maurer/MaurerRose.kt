@@ -34,10 +34,10 @@ private const val enableScreenshots = true // on SPACE, disables rose animations
 private const val enableScreenRecording = false // automatically hides UI when enabled
 private const val enable3dExport = false // on SPACE
 private const val seedBankName = "squareWall" // showcase, playground, squareWall, winter24_1
-private const val showUi = false
+private const val showUi = true
 
 // config background
-private val roseBackgroundColor = ColorRGBa.WHITE
+private val roseBackgroundColor = ColorRGBa.BLACK
 private val backgroundImagePath: String? = null // "data/images/snowflake21.jpeg" // null
 private const val backgroundImageFadeOutDuration = 60 * 3 // 0.0 to turn off
 private fun backgroundShadeStyle() = ShadeStyles.background // ShadeStyles.unstableGrowth / null
@@ -57,8 +57,6 @@ private const val animationDuration = 5_000L // milliseconds
 
 /**
  * This program draws and animates Maurer Rose - https://en.wikipedia.org/wiki/Maurer_rose.
- *
-
  */
 @Suppress("GrazieInspection")
 fun main() {
@@ -86,7 +84,8 @@ fun main() {
             addUiIfEnabled()
             enableKeyboardControls(
                 { rose.n += it },
-                { rose.d += it }
+                { rose.d += it },
+                DEFAULT_ZOOM
             )
 
             // TODO add WindowedGUI
@@ -208,7 +207,6 @@ private class MaurerRose : Animatable() {
         if (strokeShadeStyle != null) {
             strokeShadeStyle.parameter("resetFill", true)
             strokeShadeStyle.fragmentTransform = strokeShadeStyle.fragmentTransform?.replace("x_fill", "x_stroke")
-            if (!shadeStyleDebugInfoPrinted) { println(strokeShadeStyle.fragmentTransform); shadeStyleDebugInfoPrinted = true}
             drawer.shadeStyle = strokeShadeStyle
         }
     }
@@ -363,6 +361,7 @@ private fun Program.enableVisibilityAnimations() {
 fun Program.enableSeedView() {
     onFKeys { group -> bank.setGroup(group) }
     executeOnKey("§") { bank.toggleEditMode() }
+    executeOnKey("delete") { bank.removeCurrentSeed() }
     onNumberKeys { slot -> bank.setSlot(slot, rose.n, rose.d) }
     bank.loadFonts()
     if (showUi && !enableScreenRecording) extend {
@@ -387,7 +386,9 @@ private fun Program.addUiIfEnabled() {
 
 var curvesEnabled = false
 var fillEnabled = false
-var zoom = 0.95
+private const val DEFAULT_ZOOM = 0.95
+
+var zoom = DEFAULT_ZOOM
 
 private fun Program.setupScreenRecordingIfEnabled() {
     if (enableScreenRecording) {
@@ -409,7 +410,7 @@ private fun Program.setupScreenshotsIfEnabled() {
 
 private class RoseScreenshots : Screenshots() {
 
-    private val customFolderName = "screenshots/maurer_roses"
+    private val customFolderName = "screenshots/maurer_roses/$seedBankName-${bank.selectedSeedGroup.inc()}"
 
     init {
         name = "$customFolderName/rose_${rose.n}-${rose.d}.png"
