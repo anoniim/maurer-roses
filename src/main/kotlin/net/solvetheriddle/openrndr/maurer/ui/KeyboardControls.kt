@@ -3,6 +3,7 @@ package net.solvetheriddle.openrndr.maurer.ui
 import net.solvetheriddle.openrndr.maurer.curvesEnabled
 import net.solvetheriddle.openrndr.maurer.fillEnabled
 import net.solvetheriddle.openrndr.maurer.zoom
+import org.openrndr.KEY_DELETE
 import org.openrndr.KEY_ESCAPE
 import org.openrndr.KeyEvent
 import org.openrndr.KeyModifier

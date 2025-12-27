@@ -21,15 +21,9 @@ class SeedBank(
         private set
     var selectedSeed = 0
     private val seedBankFile = File("data/maurer_roses_store/$seedBankName").apply { createNewFile() }
+    private lateinit var comments: MutableList<String>
     private val seedBank = loadSeeds().toMutableList()
     var seeds = seedBank[selectedSeedGroup].toMutableList()
-
-    private fun loadSeeds(): List<List<RoseSeed>> {
-        val loadedSeedBank = seedBankFile.readLines().map { line ->
-            line.split(";").map(RoseSeed::fromString)
-        }
-        return if (loadedSeedBank.size == 12) loadedSeedBank else newSeedBank()
-    }
 
     private fun newSeedBank(): List<List<RoseSeed>> = List(12) { List(9) { RoseSeed.Empty } }
     private fun List<RoseSeed>.isGroupEmpty() = all { seed -> !seed.isNotEmpty() }
@@ -41,23 +35,64 @@ class SeedBank(
 
     private fun MutableList<RoseSeed>.isNotAllZeros() = any { seed -> seed.isNotEmpty() }
 
+    private fun loadSeeds(): List<List<RoseSeed>> {
+        val loadedSeedBank = seedBankFile.readLines().mapIndexed { index, line ->
+            val lineWithoutComments = extractComments(line, index)
+            lineWithoutComments.split(";").map(RoseSeed::fromString)
+        }
+        return if (loadedSeedBank.size >= 12) loadedSeedBank else newSeedBank()
+    }
+
+    private fun extractComments(line: String, index: Int): String = if (line.contains("//")) {
+        if (!this::comments.isInitialized) {
+            comments = mutableListOf("")
+        }
+        fillGapsInCommentsIfNeeded(index)
+        val indexOfCommentSymbol = line.indexOf("//")
+        comments[index] = line.substring(indexOfCommentSymbol)
+        line.removeRange(startIndex = indexOfCommentSymbol, endIndex = line.lastIndex)
+    } else line
+
     private fun readSeed(slot: Int) {
         selectedSeed = slot
+        fillGapsInSeedsIfNeeded(slot)
         setRose(seeds[slot].nValue, seeds[slot].dValue)
     }
 
     private fun writeSeed(slot: Int, nValue: Double, dValue: Double) {
         selectedSeed = slot
         val seed = RoseSeed(nValue, dValue)
+        fillGapsInSeedsIfNeeded(slot)
         seeds[slot] = seed
         seedBank[selectedSeedGroup] = seeds
-        seedBankFile.write(seedBank)
+        seedBankFile.write(seedBank, comments)
     }
 
-    private fun File.write(seedBank: List<List<RoseSeed>>) {
-        writeText(seedBank.joinToString("\n") { group ->
-            group.joinToString(";") { seed -> "${seed.nValue},${seed.dValue}" }
-        })
+    private fun fillGapsInSeedsIfNeeded(slot: Int) {
+        while (seeds.size <= slot) {
+            seeds.add(RoseSeed.Empty)
+        }
+    }
+
+    private fun fillGapsInCommentsIfNeeded(slot: Int) {
+        while (comments.size <= slot) {
+            comments.add("")
+        }
+    }
+
+    private fun File.write(seedBank: List<List<RoseSeed>>, comments: MutableList<String>) {
+        val serializedBank = buildString {
+            seedBank.forEachIndexed { index, seeds ->
+                append("F${index + 1} ___")
+                seeds.forEachIndexed { index, seed ->
+                    append(" ${index + 1}: ${seed.nValue},${seed.dValue};")
+                }
+                fillGapsInCommentsIfNeeded(index)
+                append(comments[index])
+                append('\n')
+            }
+        }
+        writeText(serializedBank)
     }
 
     private fun Program.drawSeedGroup(topMargin: Double) {
@@ -127,5 +162,12 @@ class SeedBank(
         smallFont = program.loadFont("data/fonts/Rowdies-Light.ttf", 12.0)
         mediumFont = program.loadFont("data/fonts/Rowdies-Light.ttf", 18.0)
         bigFont = program.loadFont("data/fonts/Rowdies-Bold.ttf", 40.0)
+    }
+
+    fun removeCurrentSeed() {
+        seeds.removeAt(selectedSeed)
+        seedBank[selectedSeedGroup] = seeds
+        seedBankFile.write(seedBank, comments)
+        toggleEditMode()
     }
 }

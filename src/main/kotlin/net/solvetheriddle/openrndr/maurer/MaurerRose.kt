@@ -34,10 +34,10 @@ private const val enableScreenshots = true // on SPACE, disables rose animations
 private const val enableScreenRecording = false // automatically hides UI when enabled
 private const val enable3dExport = false // on SPACE
 private const val seedBankName = "squareWall" // showcase, playground, squareWall, winter24_1
-private const val showUi = false
+private const val showUi = true
 
 // config background
-private val roseBackgroundColor = ColorRGBa.WHITE
+private val roseBackgroundColor = ColorRGBa.BLACK
 private val backgroundImagePath: String? = null // "data/images/snowflake21.jpeg" // null
 private const val backgroundImageFadeOutDuration = 60 * 3 // 0.0 to turn off
 private fun backgroundShadeStyle() = ShadeStyles.background // ShadeStyles.unstableGrowth / null
@@ -361,6 +361,7 @@ private fun Program.enableVisibilityAnimations() {
 fun Program.enableSeedView() {
     onFKeys { group -> bank.setGroup(group) }
     executeOnKey("§") { bank.toggleEditMode() }
+    executeOnKey("delete") { bank.removeCurrentSeed() }
     onNumberKeys { slot -> bank.setSlot(slot, rose.n, rose.d) }
     bank.loadFonts()
     if (showUi && !enableScreenRecording) extend {
