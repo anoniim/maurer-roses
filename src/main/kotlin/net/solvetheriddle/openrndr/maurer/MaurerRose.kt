@@ -35,6 +35,7 @@ private const val enableScreenRecording = false // automatically hides UI when e
 private const val enable3dExport = false // on SPACE
 private const val seedBankName = "squareWall" // showcase, playground, squareWall, winter24_1
 private const val showUi = true
+private const val experimentationMode = false
 
 // config background
 private val roseBackgroundColor = ColorRGBa.BLACK
@@ -365,7 +366,7 @@ fun Program.enableSeedView() {
     onNumberKeys { slot -> bank.setSlot(slot, rose.n, rose.d) }
     bank.loadFonts()
     if (showUi && !enableScreenRecording) extend {
-        bank.drawUi()
+        bank.drawUi(experimentationMode)
     }
 }
 
@@ -373,7 +374,7 @@ private lateinit var nSlider: Slider
 private lateinit var dSlider: Slider
 
 private fun Program.addUiIfEnabled() {
-    if (showUi && !enableScreenRecording) extend(ControlManager()) {
+    if (showUi && !enableScreenRecording && experimentationMode) extend(ControlManager()) {
         layout {
             nSlider = addNSlider(initialN) { rose.n = it }
             dSlider = addDSlider(initialD) { rose.d = it }

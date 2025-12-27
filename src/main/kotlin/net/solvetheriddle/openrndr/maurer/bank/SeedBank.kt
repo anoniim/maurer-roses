@@ -145,8 +145,8 @@ class SeedBank(
     }
 
     context(program: Program)
-    fun drawUi() {
-        val topMargin = 185.0
+    fun drawUi(experimentationMode: Boolean) {
+        val topMargin = if (experimentationMode) 185.0 else 20.0
         program.drawSeedGroup(topMargin)
         seeds.forEachIndexed { index, seed ->
             if (seed.isNotEmpty()) program.drawSeed(index, seed.nValue, seed.dValue, topMargin)
