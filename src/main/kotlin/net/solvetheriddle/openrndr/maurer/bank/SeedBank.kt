@@ -128,7 +128,7 @@ class SeedBank(
         selectedSeedGroup = group
         selectedSeed = 0
         seeds = seedBank[selectedSeedGroup].toMutableList()
-        if (seeds.isNotAllZeros()) {
+        if (!editMode && seeds.isNotAllZeros()) {
             setRose(seeds[0].nValue, seeds[0].dValue)
         }
     }
@@ -146,7 +146,7 @@ class SeedBank(
 
     context(program: Program)
     fun drawUi(experimentationMode: Boolean) {
-        val topMargin = if (experimentationMode) 185.0 else 20.0
+        val topMargin = if (experimentationMode) 275.0 else 20.0
         program.drawSeedGroup(topMargin)
         seeds.forEachIndexed { index, seed ->
             if (seed.isNotEmpty()) program.drawSeed(index, seed.nValue, seed.dValue, topMargin)

@@ -1,9 +1,10 @@
 package net.solvetheriddle.openrndr.maurer.ui
 
+import net.solvetheriddle.openrndr.maurer.backgroundShadeStyleEnabled
 import net.solvetheriddle.openrndr.maurer.curvesEnabled
 import net.solvetheriddle.openrndr.maurer.fillEnabled
+import net.solvetheriddle.openrndr.maurer.strokeShadeStyleEnabled
 import net.solvetheriddle.openrndr.maurer.zoom
-import org.openrndr.KEY_DELETE
 import org.openrndr.KEY_ESCAPE
 import org.openrndr.KeyEvent
 import org.openrndr.KeyModifier
@@ -11,10 +12,10 @@ import org.openrndr.MouseButton
 import org.openrndr.Program
 import org.openrndr.panel.elements.*
 
-fun Body.addNSlider(initialN: Double, onValueChanged: (Double) -> Unit): Slider {
+fun Body.addNSlider(initialN: Double, maxParameterValue: Double, onValueChanged: (Double) -> Unit): Slider {
     return slider {
         label = "n"
-        range = Range(0.0, 30000.0)
+        range = Range(0.0, maxParameterValue)
         value = initialN
         precision = 6
         events.valueChanged.listen {
@@ -23,10 +24,10 @@ fun Body.addNSlider(initialN: Double, onValueChanged: (Double) -> Unit): Slider 
     }
 }
 
-fun Body.addDSlider(initialD: Double, onValueChanged: (Double) -> Unit): Slider {
+fun Body.addDSlider(initialD: Double, maxParameterValue: Double, onValueChanged: (Double) -> Unit): Slider {
     return slider {
         label = "d"
-        range = Range(0.0, 30000.0)
+        range = Range(0.0, maxParameterValue)
         value = initialD
         precision = 6
         events.valueChanged.listen {
@@ -151,6 +152,28 @@ fun Body.addFillButton() {
         events.clicked.listen {
             fillEnabled = !fillEnabled
             label = getFillButtonLabel()
+        }
+    }
+}
+
+fun Body.addStrokeColorButton() {
+    button {
+        fun getStrokeButtonLabel() = if (strokeShadeStyleEnabled) "Stroke shadeStyle ON" else "Stroke shadeStyle OFF"
+        label = getStrokeButtonLabel()
+        events.clicked.listen {
+            strokeShadeStyleEnabled = !strokeShadeStyleEnabled
+            label = getStrokeButtonLabel()
+        }
+    }
+}
+
+fun Body.addBackgroundColorButton() {
+    button {
+        fun getBackgroundButtonLabel() = if (backgroundShadeStyleEnabled) "Background shadeStyle ON" else "Background shadeStyle OFF"
+        label = getBackgroundButtonLabel()
+        events.clicked.listen {
+            backgroundShadeStyleEnabled = !backgroundShadeStyleEnabled
+            label = getBackgroundButtonLabel()
         }
     }
 }

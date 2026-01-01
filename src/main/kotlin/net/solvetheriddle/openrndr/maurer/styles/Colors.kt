@@ -141,6 +141,36 @@ object Colors {
         flame, pastel, sunrise, dirtyBeach, blues, reds, greens, yellowToPurple
     )
 
+    // 1. Gymnosperm Architecture (Cypress Cone)
+    // Good for recursive branching or structural outer shells
+    val cypressCone = listOf(
+        ColorRGBa.fromHex("#2E8B57"), // Scale Green (Living tissue)
+        ColorRGBa.fromHex("#A0522D"), // Cone Rust (Desiccated scales)
+        ColorRGBa.fromHex("#D2B48C")  // Cone Core (Inner wood)
+    )
+
+    // 2. Antarctic Diapsore (Grass Seed)
+    // High contrast teal/gold, excellent for interference patterns
+    val antarcticGrass = listOf(
+        ColorRGBa.fromHex("#66CDAA"), // Glume Teal (The spikelet)
+        ColorRGBa.fromHex("#EEDC82"), // Ovary Gold (The grain)
+        ColorRGBa.fromHex("#2F4F4F")  // Scaffolding Slate (Darker structural lines)
+    )
+
+    // 3. Reproductive Vibrance (Magenta Flower)
+    // Use for focal points or "strange attractors"
+    val magentaFloral = listOf(
+        ColorRGBa.fromHex("#C71585"), // Petal Magenta
+        ColorRGBa.fromHex("#556B2F"), // Carpel Olive
+        ColorRGBa.fromHex("#BDB76B")  // Stamen Khaki
+    )
+
+    // The deep void background from the book photography
+    val voidBackground = ColorRGBa.fromHex("#050505")
+
+    // A flat list of all accents for random sampling
+    val allAccents = cypressCone + antarcticGrass + magentaFloral
+
     val random: ColorRGBa
         get() {
             return ColorRGBa(

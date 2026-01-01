@@ -1,11 +1,9 @@
+@file:Suppress("unused")
+
 package net.solvetheriddle.openrndr.maurer.styles
 
 import org.openrndr.color.ColorRGBa
 import org.openrndr.extra.color.presets.*
-import org.openrndr.extra.shadestyles.NPointLinearGradient
-import org.openrndr.extra.shadestyles.NPointRadialGradient
-import org.openrndr.extra.shadestyles.linearGradient
-
 import org.openrndr.extra.shadestyles.fills.gradients.gradient
 
 object ShadeStyles {
@@ -379,10 +377,90 @@ object ShadeStyles {
         }
     }
 
-    val background = null
-//    val background = blackToCoral
+    // 1. Gymnosperm Architecture (Cypress Cone)
+    // Logic: Inner woody core -> Rusty protective scales -> Living green foliage tips
+    val gymnospermCone = gradient<ColorRGBa> {
+        radial {
+            // Inner Core: Tan/Wood (Dense and opaque)
+            stops[0.0] = ColorRGBa.fromHex("#D2B48C").opacify(1.0)
+            stops[0.25] = ColorRGBa.fromHex("#D2B48C").opacify(0.9)
 
-//    val foreground = null
-    val foreground = beautifulFlower
+            // Middle Scales: Rust/Sienna (The hard structural shell)
+            stops[0.4] = ColorRGBa.fromHex("#A0522D").opacify(0.8)
+            stops[0.65] = ColorRGBa.fromHex("#A0522D").opacify(0.7)
+
+            // Outer Foliage: Sea Green (Living tissue, fading out)
+            stops[0.8] = ColorRGBa.fromHex("#2E8B57").opacify(0.5)
+            stops[0.95] = ColorRGBa.fromHex("#2E8B57").opacify(0.2)
+
+            // Fade to Void
+            stops[1.0] = ColorRGBa.fromHex("#050505").opacify(0.0)
+        }
+    }
+
+    // 2. Antarctic Diapsore (Grass Seed)
+    // Logic: Golden ovary (seed) -> Teal protective glumes -> Slate structural spines
+    val antarcticSeed = gradient<ColorRGBa> {
+        radial {
+            // Center: Flaxen Gold (The grain itself)
+            stops[0.0] = ColorRGBa.fromHex("#EEDC82").opacify(1.0)
+            stops[0.3] = ColorRGBa.fromHex("#EEDC82").opacify(0.8)
+
+            // Middle: Aquamarine/Teal (The husk/glume)
+            stops[0.5] = ColorRGBa.fromHex("#66CDAA").opacify(0.7)
+            stops[0.75] = ColorRGBa.fromHex("#66CDAA").opacify(0.5)
+
+            // Outer: Dark Slate (The wispy hair grass tips)
+            stops[0.9] = ColorRGBa.fromHex("#2F4F4F").opacify(0.3)
+
+            // Fade to Void
+            stops[1.0] = ColorRGBa.fromHex("#050505").opacify(0.0)
+        }
+    }
+
+    // 3. Reproductive Vibrance (Magenta Flower)
+    // Logic: Olive/Khaki reproductive center -> Exploding Magenta petals
+    val magentaBloom = gradient<ColorRGBa> {
+        radial {
+            // Center: Olive Green (Carpels)
+            stops[0.0] = ColorRGBa.fromHex("#556B2F").opacify(1.0)
+
+            // Ring: Dark Khaki (Stamens/Pollen)
+            stops[0.2] = ColorRGBa.fromHex("#BDB76B").opacify(0.9)
+            stops[0.3] = ColorRGBa.fromHex("#BDB76B").opacify(0.8)
+
+            // Petals: Deep Magenta (The main attractor)
+            stops[0.5] = ColorRGBa.fromHex("#C71585").opacify(0.7)
+            stops[0.85] = ColorRGBa.fromHex("#C71585").opacify(0.4)
+
+            // Fade to Void
+            stops[1.0] = ColorRGBa.fromHex("#050505").opacify(0.0)
+        }
+    }
+
+    // 4. The "Bio Transition" (Rust -> Gold -> Teal)
+    // Logic: A purely aesthetic transition from dead husk to living seed
+    val bioTransition = gradient<ColorRGBa> {
+        radial {
+            // Start: Rust (Husk)
+            stops[0.0] = ColorRGBa.fromHex("#A0522D").opacify(1.0)
+            stops[0.3] = ColorRGBa.fromHex("#A0522D").opacify(0.8)
+
+            // Middle: Gold (Seed)
+            stops[0.5] = ColorRGBa.fromHex("#EEDC82").opacify(0.8)
+            stops[0.6] = ColorRGBa.fromHex("#EEDC82").opacify(0.6)
+
+            // End: Teal (Life/Sprout)
+            stops[0.8] = ColorRGBa.fromHex("#66CDAA").opacify(0.5)
+            stops[1.0] = ColorRGBa.fromHex("#66CDAA").opacify(0.0)
+        }
+    }
+
+    //    val foreground = null
+    val foreground = antarcticSeed
 //    val foreground = whiteToRed
+
+    //    val background = null
+    val background = blackToCoral
+
 }

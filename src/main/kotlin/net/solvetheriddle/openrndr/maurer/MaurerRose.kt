@@ -29,25 +29,27 @@ import kotlin.math.*
 import kotlin.properties.Delegates
 
 // sketch config
-private val useDisplay = Display.PRINT_SQUARE_SMALL // Display.FULLSCREEN
-private const val enableScreenshots = true // on SPACE, disables rose animations
+private val useDisplay = Display.LG_SQUARE_RIGHT // Display.FULLSCREEN
+private const val enableScreenshots = false // on SPACE, disables rose animations
 private const val enableScreenRecording = false // automatically hides UI when enabled
 private const val enable3dExport = false // on SPACE
-private const val seedBankName = "squareWall" // showcase, playground, squareWall, winter24_1
+private const val seedBankName = "periodicity-vol1" // showcase, playground, squareWall, winter24_1
 private const val showUi = true
-private const val experimentationMode = false
+private const val experimentationMode = true
+private const val maxParameterValue = 1000.0
 
 // config background
-private val roseBackgroundColor = ColorRGBa.BLACK
+private val roseBackgroundColor = ColorRGBa.WHITE
 private val backgroundImagePath: String? = null // "data/images/snowflake21.jpeg" // null
 private const val backgroundImageFadeOutDuration = 60 * 3 // 0.0 to turn off
-private fun backgroundShadeStyle() = ShadeStyles.background // ShadeStyles.unstableGrowth / null
+private val backgroundShadeStyle = ShadeStyles.background // ShadeStyles.unstableGrowth / null
 
 // config rose stroke, color, fill
 private const val lineOpacity = 1.0 // 0.6
 private const val allowPartialShapes = true // true for smoother animations and cut-off stills; false for flashy animations and complete stills
-private val roseStrokeColor = ColorRGBa.BLACK.opacify(0.9) // TRANSPARENT
-private val strokeShadeStyle: ShadeStyle? = ShadeStyles.foreground
+private val roseStrokeColor = ColorRGBa.BLACK.opacify(
+    0.9) // TRANSPARENT
+private var strokeShadeStyle: ShadeStyle? = ShadeStyles.foreground
 private fun fillShadeStyle() = null // ShadeStyles.beautifulFlower
 
 // config animations
@@ -71,7 +73,7 @@ fun main() {
             setupScreenRecordingIfEnabled()
 
             // DRAW
-            drawBackgroundIfSet(backgroundShadeStyle())
+            drawBackgroundIfSet()
             drawBackgroundImageIfSet(backgroundImagePath)
             drawRose(rose)
 
@@ -94,13 +96,13 @@ fun main() {
     }
 }
 
-private fun Program.drawBackgroundIfSet(shadeStyle: ShadeStyle?) {
+private fun Program.drawBackgroundIfSet() {
     extend {
         @Suppress("SENSELESS_COMPARISON", "KotlinRedundantDiagnosticSuppress") // static configuration
-        if (shadeStyle != null) {
+        if (backgroundShadeStyleEnabled && backgroundShadeStyle != null) {
             drawer.clear(roseBackgroundColor)
             drawer.stroke = null
-            drawer.shadeStyle = shadeStyle
+            drawer.shadeStyle = backgroundShadeStyle
             drawer.rectangle(0.0, 0.0, drawer.bounds.width, drawer.bounds.height)
             drawer.shadeStyle = null
         } else {
@@ -203,11 +205,10 @@ private class MaurerRose : Animatable() {
         if (!contour.empty) program.drawer.contour(contour)
     }
 
-    var shadeStyleDebugInfoPrinted = false
     private fun Program.setStrokeShadeStyleIfEnabled() {
-        if (strokeShadeStyle != null) {
-            strokeShadeStyle.parameter("resetFill", true)
-            strokeShadeStyle.fragmentTransform = strokeShadeStyle.fragmentTransform?.replace("x_fill", "x_stroke")
+        if (strokeShadeStyleEnabled && strokeShadeStyle != null) {
+            strokeShadeStyle?.parameter("resetFill", true)
+            strokeShadeStyle?.fragmentTransform = strokeShadeStyle?.fragmentTransform?.replace("x_fill", "x_stroke")
             drawer.shadeStyle = strokeShadeStyle
         }
     }
@@ -376,17 +377,20 @@ private lateinit var dSlider: Slider
 private fun Program.addUiIfEnabled() {
     if (showUi && !enableScreenRecording && experimentationMode) extend(ControlManager()) {
         layout {
-            nSlider = addNSlider(initialN) { rose.n = it }
-            dSlider = addDSlider(initialD) { rose.d = it }
+            nSlider = addNSlider(initialN, maxParameterValue) { rose.n = it }
+            dSlider = addDSlider(initialD, maxParameterValue) { rose.d = it }
             addCurvesButton()
+            addStrokeColorButton()
+            addBackgroundColorButton()
             addFillButton()
-            // TODO add Stroke button
         }
     }
 }
 
 var curvesEnabled = false
 var fillEnabled = false
+var strokeShadeStyleEnabled = false
+var backgroundShadeStyleEnabled = false
 private const val DEFAULT_ZOOM = 0.95
 
 var zoom = DEFAULT_ZOOM
