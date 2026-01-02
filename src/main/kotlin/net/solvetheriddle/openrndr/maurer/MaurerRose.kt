@@ -42,7 +42,7 @@ private const val enableScreenRecording = false // automatically hides UI when e
 // UI
 private const val maxParameterValue = 1000.0
 private const val experimentationMode = true
-private const val showUi = true
+private const val showUi = false
 
 // config BACKGROUND
 private val backgroundImagePath: String? = null // "data/images/snowflake21.jpeg" // null
@@ -57,7 +57,7 @@ private const val allowPartialShapes = true // true for smoother animations and 
 private fun fillShadeStyle() = null // ShadeStyles.beautifulFlower
 private val roseStrokeColor = ColorRGBa.WHITE
 private var strokeShadeStyle: ShadeStyle? = ShadeStyles.foreground
-var strokeShadeStyleEnabled = false
+var strokeShadeStyleEnabled = true
 var fillEnabled = false
 var curvesEnabled = false
 private const val DEFAULT_ZOOM = 0.95

@@ -8,7 +8,6 @@ data class RoseSeed(
 
     companion object {
         fun fromString(input: String): RoseSeed {
-            println(input)
             return if (input.contains(",")) {
                 val (nValue, dValue) = input.split(",")
                 val nValueSanitized = removePrefixBefore(nValue, ':')
