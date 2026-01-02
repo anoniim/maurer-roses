@@ -444,7 +444,7 @@ object ShadeStyles {
         radial {
             // Start: Rust (Husk)
             stops[0.0] = ColorRGBa.fromHex("#A0522D").opacify(1.0)
-            stops[0.3] = ColorRGBa.fromHex("#A0522D").opacify(0.8)
+            stops[0.1] = ColorRGBa.fromHex("#A0522D").opacify(0.8)
 
             // Middle: Gold (Seed)
             stops[0.5] = ColorRGBa.fromHex("#EEDC82").opacify(0.8)
@@ -457,10 +457,10 @@ object ShadeStyles {
     }
 
     //    val foreground = null
-    val foreground = antarcticSeed
+    val foreground = bioTransition
 //    val foreground = whiteToRed
 
-    //    val background = null
+//        val background = null
     val background = blackToCoral
 
 }
