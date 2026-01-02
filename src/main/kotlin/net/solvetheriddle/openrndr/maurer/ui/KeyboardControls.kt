@@ -10,6 +10,9 @@ import org.openrndr.KeyEvent
 import org.openrndr.KeyModifier
 import org.openrndr.MouseButton
 import org.openrndr.Program
+import org.openrndr.math.Matrix44
+import org.openrndr.math.Vector2
+import org.openrndr.math.transforms.buildTransform
 import org.openrndr.panel.elements.*
 
 fun Body.addNSlider(initialN: Double, maxParameterValue: Double, onValueChanged: (Double) -> Unit): Slider {
@@ -36,16 +39,27 @@ fun Body.addDSlider(initialD: Double, maxParameterValue: Double, onValueChanged:
     }
 }
 
-fun Program.enableKeyboardControls(onNChanged: (Double) -> Unit, onDChanged: (Double) -> Unit, defaultZoom: Double) {
+fun Program.enableKeyboardControls(
+    onNChanged: (Double) -> Unit,
+    onDChanged: (Double) -> Unit,
+    defaultZoom: Double,
+    setView: (Matrix44) -> Unit
+) {
     onKeyEvent { keyEvent -> keyEvent.mapAsdfKeyRow(onNChanged) }
     onKeyEvent { keyEvent -> keyEvent.mapZxcvKeyRow(onDChanged) }
-    setupZoomControl(defaultZoom)
+    
+    val onReset = {
+        setView(Matrix44.IDENTITY)
+        zoom = defaultZoom
+    }
+    
+    setupZoomControl(defaultZoom, onReset)
 }
 
-fun Program.setupZoomControl(defaultZoom: Double) {
+fun Program.setupZoomControl(defaultZoom: Double, onReset: () -> Unit) {
     mouse.buttonUp.listen {
         if (it.button == MouseButton.CENTER) {
-            zoom = defaultZoom
+            onReset()
         }
     }
     val scrollSpeedDampening = 50
@@ -53,10 +67,46 @@ fun Program.setupZoomControl(defaultZoom: Double) {
         zoom += it.rotation.y / scrollSpeedDampening
     }
     onKeyEvent {
-        // DEBUG // println("Pressed: ${it.modifiers} + ${it.key} (name: ${it.name})")
         if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "+") zoom += 0.1
         if (it.modifiers.contains(KeyModifier.SUPER) && it.name == "-") zoom -= 0.1
-        if (it.key == KEY_ESCAPE) zoom = defaultZoom
+        if (it.key == KEY_ESCAPE) {
+            zoom = defaultZoom
+            onReset()
+        }
+    }
+}
+
+fun Program.setupMouseControls(getView: () -> Matrix44, setView: (Matrix44) -> Unit) {
+    var rotationCenter = Vector2.ZERO
+
+    fun panView(displacement: Vector2) {
+        val currentView = getView()
+        val newView = buildTransform {
+            translate(displacement)
+        } * currentView
+        setView(newView)
+    }
+
+    fun rotateView(angle: Double) {
+        val currentView = getView()
+        val newView = buildTransform {
+            translate(rotationCenter)
+            rotate(angle)
+            translate(-rotationCenter)
+        } * currentView
+        setView(newView)
+    }
+
+    mouse.buttonDown.listen {
+        rotationCenter = it.position
+    }
+    
+    mouse.dragged.listen {
+        when (it.button) {
+            MouseButton.LEFT -> panView(it.dragDisplacement)
+            MouseButton.RIGHT -> rotateView(it.dragDisplacement.x + it.dragDisplacement.y)
+            else -> Unit
+        }
     }
 }
 

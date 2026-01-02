@@ -18,6 +18,7 @@ import org.openrndr.draw.loadImage
 import org.openrndr.extensions.Screenshots
 import org.openrndr.extra.fx.color.LumaOpacity
 import org.openrndr.ffmpeg.ScreenRecorder
+import org.openrndr.math.Matrix44
 import org.openrndr.math.Vector2
 import org.openrndr.math.asRadians
 import org.openrndr.panel.ControlManager
@@ -30,27 +31,37 @@ import kotlin.properties.Delegates
 
 // sketch config
 private val useDisplay = Display.LG_SQUARE_RIGHT // Display.FULLSCREEN
-private const val enableScreenshots = false // on SPACE, disables rose animations
-private const val enableScreenRecording = false // automatically hides UI when enabled
-private const val enable3dExport = false // on SPACE
-private const val seedBankName = "periodicity-vol1" // showcase, playground, squareWall, winter24_1
-private const val showUi = true
-private const val experimentationMode = true
-private const val maxParameterValue = 1000.0
 
-// config background
-private val roseBackgroundColor = ColorRGBa.WHITE
+// SEED BANK
+private const val seedBankName = "periodicity-vol1" // showcase, playground, squareWall, winter24_1
+
+// CONTROLS
+private const val enableScreenshots = true // on SPACE, disables rose animations
+private const val enableScreenRecording = false // automatically hides UI when enabled
+
+// UI
+private const val maxParameterValue = 1000.0
+private const val experimentationMode = true
+private const val showUi = true
+
+// config BACKGROUND
 private val backgroundImagePath: String? = null // "data/images/snowflake21.jpeg" // null
 private const val backgroundImageFadeOutDuration = 60 * 3 // 0.0 to turn off
+private val roseBackgroundColor = ColorRGBa.BLACK
 private val backgroundShadeStyle = ShadeStyles.background // ShadeStyles.unstableGrowth / null
+var backgroundShadeStyleEnabled = false
 
-// config rose stroke, color, fill
-private const val lineOpacity = 1.0 // 0.6
+// config rose STROKE, COLOR, FILL
+private const val lineOpacity = 0.9 // 0.6
 private const val allowPartialShapes = true // true for smoother animations and cut-off stills; false for flashy animations and complete stills
-private val roseStrokeColor = ColorRGBa.BLACK.opacify(
-    0.9) // TRANSPARENT
-private var strokeShadeStyle: ShadeStyle? = ShadeStyles.foreground
 private fun fillShadeStyle() = null // ShadeStyles.beautifulFlower
+private val roseStrokeColor = ColorRGBa.WHITE
+private var strokeShadeStyle: ShadeStyle? = ShadeStyles.foreground
+var strokeShadeStyleEnabled = false
+var fillEnabled = false
+var curvesEnabled = false
+private const val DEFAULT_ZOOM = 0.95
+var zoom = DEFAULT_ZOOM
 
 // config animations
 private const val fadeOutBackgroundAutomatically = false
@@ -68,28 +79,37 @@ fun main() {
             sketchSize(useDisplay)
         }
         program {
+            var view = Matrix44.IDENTITY
+
             // RECORD
             setupScreenshotsIfEnabled()
             setupScreenRecordingIfEnabled()
 
+            // UI
+            addUiIfEnabled()
+            enableKeyboardControls(
+                { rose.n += it },
+                { rose.d += it },
+                DEFAULT_ZOOM,
+                setView = { view = it }
+            )
+            setupMouseControls(
+                getView = { view },
+                setView = { view = it }
+            )
+
             // DRAW
-            drawBackgroundIfSet()
+            drawBackgroundIfSet()   // background first
+            addSeedView()           // custom UI second
+
             drawBackgroundImageIfSet(backgroundImagePath)
-            drawRose(rose)
+            drawRose(rose) { view }
 
             // ANIMATE
             enableBackgroundFadeOutAnimations()
             enableVisibilityAnimations()
             enableRoseAnimations()
 
-            // UI
-            enableSeedView()
-            addUiIfEnabled()
-            enableKeyboardControls(
-                { rose.n += it },
-                { rose.d += it },
-                DEFAULT_ZOOM
-            )
 
             // TODO add WindowedGUI
         }
@@ -111,9 +131,11 @@ private fun Program.drawBackgroundIfSet() {
     }
 }
 
-private fun Program.drawRose(rose: MaurerRose) {
+private fun Program.drawRose(rose: MaurerRose, getView: () -> Matrix44) {
     extend {
+        val view = getView()
         drawer.isolated {
+            drawer.model = view
             drawer.translate(drawer.bounds.center)
             drawer.translate(0.0, 6.0)
             rose.draw()
@@ -360,7 +382,7 @@ private fun Program.enableVisibilityAnimations() {
     }
 }
 
-fun Program.enableSeedView() {
+fun Program.addSeedView() {
     onFKeys { group -> bank.setGroup(group) }
     executeOnKey("§") { bank.toggleEditMode() }
     executeOnKey("delete") { bank.removeCurrentSeed() }
@@ -387,13 +409,6 @@ private fun Program.addUiIfEnabled() {
     }
 }
 
-var curvesEnabled = false
-var fillEnabled = false
-var strokeShadeStyleEnabled = false
-var backgroundShadeStyleEnabled = false
-private const val DEFAULT_ZOOM = 0.95
-
-var zoom = DEFAULT_ZOOM
 
 private fun Program.setupScreenRecordingIfEnabled() {
     if (enableScreenRecording) {
