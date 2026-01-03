@@ -138,6 +138,7 @@ private fun Program.drawRose(rose: MaurerRose, getView: () -> Matrix44) {
             drawer.model = view
             drawer.translate(drawer.bounds.center)
             drawer.translate(0.0, 6.0)
+            drawer.scale(zoom)
             rose.draw()
             rose.updateAnimation()
         }
@@ -260,7 +261,7 @@ private class MaurerRose : Animatable() {
     }
 
     private fun Program.lineShapeContour(): ShapeContour = contour {
-        val radius = drawer.height / 2.0 * zoom
+        val radius = drawer.height / 2.0
         val firstPoint = getPointForAngle(0, radius)
         moveTo(firstPoint)
         val numOfConnectedPoints = 360
@@ -271,7 +272,7 @@ private class MaurerRose : Animatable() {
     }
 
     private fun Program.fillableCompleteShapeContour(): ShapeContour {
-        val radius = drawer.height / 2.0 * zoom
+        val radius = drawer.height / 2.0
         var angle = 0
         var nextPoint = getPointForAngle(0, radius)
         val rosePoints = mutableListOf(nextPoint)
