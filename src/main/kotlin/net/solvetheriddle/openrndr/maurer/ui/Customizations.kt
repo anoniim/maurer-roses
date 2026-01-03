@@ -31,12 +31,14 @@ enum class Display(val width: Int, val height: Int, val xPosition: Int, val yPos
     PRINT_A6(1485,1050,0),
     PRINT_SQUARE_SMALL(1536,1536,0), // 10x10cm prints
 
-    PRINT_60CM_SQUARE_PRINT(17008,17008,0), // 60x60cm with 720PPI
-    PRINT_20X60CM_PRINT(17008,17008,0), // 60x60cm with 720PPI
+    // Prints in 300PPI formula: ([mm]/25.4)*300
 
-    PRINT_A1_PORTRAIT(16_838, 23_839, 0), // 594 x 841 mm with 720PPI
-    PRINT_A2_PORTRAIT(11_906, 16_838, 0), // 420 x 594 mm with 720PPI
-    PRINT_A3_PORTRAIT(8_416, 11_906, 0), // 297 x 420 mm with 720PPI
+    PRINT_60CM_SQUARE_PRINT(7_087, 7_087, 0), // 60x60cm with 300PPI
+    PRINT_20X60CM_PRINT(2_362,7_087,0), // 20x60cm with 300PPI
+
+    PRINT_A1_PORTRAIT(7_016, 9_933, 0), // 594 x 841 mm with 300PPI
+    PRINT_A2_PORTRAIT(4_961, 7_016, 0), // 420 x 594 mm with 300PPI
+    PRINT_A3_PORTRAIT(3_508, 4_961, 0), // 297 x 420 mm with 300PPI
     ;
     object FULLSCREEN: SketchSizeConfig
 }
