@@ -431,15 +431,15 @@ private fun Program.setupScreenshotsIfEnabled() {
 
 private class RoseScreenshots : Screenshots() {
 
-    private val customFolderName = "screenshots/maurer_roses/$seedBankName-${bank.selectedSeedGroup.inc()}"
+    private val customFolderName = "screenshots/maurer_roses/$seedBankName-F${bank.selectedSeedGroup.inc()}"
 
     init {
-        name = "$customFolderName/rose_${rose.n}-${rose.d}.png"
+        name = "$customFolderName/rose_${rose.n},${rose.d}.png"
     }
 
     fun updateName(n: Double? = null, d: Double? = null) {
         val newN = n ?: rose.n
         val newD = d ?: rose.d
-        name = "$customFolderName/rose_$newN-$newD.png"
+        name = "$customFolderName/rose_$newN,$newD.png"
     }
 }
